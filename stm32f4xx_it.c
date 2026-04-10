@@ -200,6 +200,22 @@ if (Vibrato_Count >= Vibrato_Rate)
 		}
 }
 
+
+
+typedef struct map_s {
+	int horizontal[3][8];
+	int vertical[2][16];
+};
+
+
+
+
+
+
+
+
+
+
 if (Animate_On > 0)
 {
 	Delay_counter++;

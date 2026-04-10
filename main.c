@@ -1,6 +1,6 @@
 /* USER CODE BEGIN Header */
 /**
-  **********************************************************************************
+  ******************************************************************************
   * @file           : main.c  LAB6
   * @brief          : Main program body
   ******************************************************************************
@@ -99,10 +99,17 @@ int Delay_counter = 0;
 int CRC_Tx = 0xaaddf4d0;
 int CRC_Rx = 0;
 
+void message_display(char[]);
+
 /* HELLO ECE-330L */
-char Message[] =
+char Message1[] =
 		{SPACE,SPACE,SPACE,SPACE,SPACE,SPACE,SPACE,SPACE,SPACE,SPACE,
-		CHAR_H,CHAR_E,CHAR_L,CHAR_L,CHAR_O,SPACE,CHAR_E,CHAR_C,CHAR_E,DASH,CHAR_J,CHAR_A,CHAR_C,CHAR_O,CHAR_B,
+		CHAR_B,CHAR_A,CHAR_T,CHAR_T,CHAR_L,CHAR_E,SPACE,CHAR_S,CHAR_H,CHAR_I,CHAR_P,
+		SPACE,SPACE,SPACE,SPACE,SPACE,SPACE,SPACE,SPACE,SPACE,SPACE};
+
+char Message2[] =
+		{SPACE,SPACE,SPACE,SPACE,SPACE,SPACE,SPACE,SPACE,SPACE,SPACE,
+		CHAR_P,CHAR_L,CHAR_A,CHAR_C,CHAR_E, SPACE,CHAR_S,CHAR_H,CHAR_I,CHAR_P,CHAR_S,
 		SPACE,SPACE,SPACE,SPACE,SPACE,SPACE,SPACE,SPACE,SPACE,SPACE};
 
 /* Declare array for Song */
@@ -137,7 +144,15 @@ int main(void)
 
   /* USER CODE END SysInit */
 
-  /* Initialize all configured peripherals */
+  /* Initialize all c
+	  		  Seven_Segment_Digit(i,SPACE,0);
+	  	  }
+
+
+
+	  HAL_Delay(500);           // Delay 1/2 second
+
+	  HAL_Delay(1000);      onfigured peripherals */
   MX_GPIO_Init();
   //MX_I2C1_Init();
   //MX_I2S3_Init();
@@ -178,54 +193,50 @@ int main(void)
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
 
-
-
-
-
-  while (1)
+  while(1)
   {
-	  int i,j;
+	  int i;
 
-	  Message_Pointer = &Message[0];
-	  Save_Pointer = &Message[0];
-	  Message_Length = sizeof(Message)/sizeof(Message[0]);
-	  Delay_msec = 200;
-	  Animate_On = 1;
 
-	  //********* Reset CRC value ********************
+	  	  Message_Pointer = &Message1[0];
+	  	  Save_Pointer = &Message1[0];
+	  	  Message_Length = sizeof(Message1)/sizeof(Message1[0]);
+	  	  Delay_msec = 200;
+	  	  Animate_On = 1;
 
-	  CRC->CR |= 1; // resetting the generator in the control register by the entire byte length
+	  	  //********* Reset CRC value ********************
 
-	  //********* Calculate CRC **********************
+	  	  CRC->CR |= 1; // resetting the generator in the control register by the entire byte length
 
-	  for (i=0; i < Message_Length; i++) // for loop that updates the CR at every new input found in the CRC
-	  {
-		  CRC->DR = Message[i];
-	  }
+	  	  //********* Calculate CRC **********************
 
-	  //********* Read CRC value into CRC_Rx  ********
-
-	  CRC_Rx = CRC->DR; //output reads what the CRC assigned to DR
-
-	  GPIOD->ODR = CRC_Rx ^ CRC_Tx;  //XOR the sent and received CRC values and display on LEDs
-
-	  HAL_Delay(5000);           // Delay 5 seconds to allow message to scroll
-
-	  Animate_On = 0;            // Stop scrolling message
-	  Seven_Segment(CRC_Tx);     // Display CRC for sent message
-	  HAL_Delay(1000);           // Delay 1 second
-	  for (i=0 ; i<8 ; i++)      // Clear the display
+	  	  for (i=0; i < Message_Length; i++) // for loop that updates the CR at every new input found in the CRC
 	  	  {
-	  		  Seven_Segment_Digit(i,SPACE,0);
+	  		  CRC->DR = Message1[i];
 	  	  }
 
-	  HAL_Delay(500);           // Delay 1/2 second
-	  Seven_Segment(CRC_Rx);    // Display CRC calculated from received message
-	  HAL_Delay(1000);          // Delay for 1 second
+	  	  //********* Read CRC value into CRC_Rx  ********
+
+	  	  CRC_Rx = CRC->DR; //output reads what the CRC assigned to DR
+
+	  	  GPIOD->ODR = CRC_Rx ^ CRC_Tx;  //XOR the sent and received CRC values and display on LEDs
+
+	  	  HAL_Delay(5000);           // Delay 5 seconds to allow message to scroll
+
+	  	  Animate_On = 0;            // Stop scrolling message
+
+	  	  HAL_Delay(1000);           // Delay 1 second
+	  	  for (i=0 ; i<8 ; i++)      // Clear the display
+	  	  	  {
+	  	  		  Seven_Segment_Digit(i,SPACE,0);
+	  	  	  }
+
+	  	  HAL_Delay(500);           // Delay 1/2 second
+  }
 
 
     /* USER CODE BEGIN 3 */
-  }
+
   /* USER CODE END 3 */
 }
 
@@ -382,7 +393,14 @@ static void MX_GPIO_Init(void)
 
   /*Configure GPIO pin : BOOT1_Pin */
   GPIO_InitStruct.Pin = BOOT1_Pin;
-  GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
+  GPIO_InitStruct.Mode = GPIO_MODE_INPUT; int i,j;
+
+  Message_Pointer = &Message1[0];
+  Save_Pointer = &Message1[0];
+  Message_Length = sizeof(Message1)/sizeof(Message1[0]);
+  Delay_msec = 200;
+  Animate_On = 1;
+
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   HAL_GPIO_Init(BOOT1_GPIO_Port, &GPIO_InitStruct);
 
