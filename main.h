@@ -37,6 +37,11 @@ extern "C" {
 /* Exported types ------------------------------------------------------------*/
 /* USER CODE BEGIN ET */
 
+typedef struct {
+    int horizontal[3][8];
+    int vertical[2][16];
+} Map;
+
 typedef struct music {
 	int note;
 	int size;
