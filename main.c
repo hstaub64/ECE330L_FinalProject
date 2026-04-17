@@ -204,6 +204,27 @@ int main(void)
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
 
+  draw_board(struct map_s m)
+  {
+    char board[8] = {0};
+    for (int i = 0; i < 8; i++)
+    {
+      // top segment
+      board[i] = |= //something;
+      // middle
+      // bottom
+    }
+
+    for (int i = 0; i < 8; i++)
+    {
+      // top left
+      // bottom left
+      // top right
+      // bottom right 
+    }
+    //write to board
+  }
+
   while (1)
   {
     // while in title stage, display scrolling message
