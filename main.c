@@ -204,7 +204,49 @@ int main(void)
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
 
+  Message_Pointer = &Message1[0];
+        Save_Pointer = &Message1[0];
+        Message_Length = sizeof(Message1) / sizeof(Message1[0]);
+        Delay_msec = 200;
+        Animate_On = 1;
 
+        //********* Reset CRC value ********************
+
+        CRC->CR |= 1; // resetting the generator in the control register by the entire byte length
+
+        //********* Calculate CRC **********************
+
+        for (int i = 0; i < Message_Length; i++) // for loop that updates the CR at every new input found in the CRC
+        {
+          CRC->DR = Message1[i];
+        }
+
+        //********* Read CRC value into CRC_Rx  ********
+
+        CRC_Rx = CRC->DR; // output reads what the CRC assigned to DR
+
+        GPIOD->ODR = CRC_Rx ^ CRC_Tx; // XOR the sent and received CRC values and display on LEDs
+
+        HAL_Delay(5000); // Delay 5 seconds to allow message to scroll
+
+        Animate_On = 0; // Stop scrolling message
+
+        HAL_Delay(1000);        // Delay 1 second
+        for (int i = 0; i < 8; i++) // Clear the display
+        {
+          Seven_Segment_Digit(i, SPACE, 0);
+        }
+
+        HAL_Delay(500); // Delay 1/2 second
+
+        // game modes
+        // 1 = player 1 boat placing
+        // 2 = player 2 boat placing
+        // 3 = player 1 turn
+        // 4 = player 2 turn
+        // 5 = game over
+
+        int game = 1;
 
   while (1)
   {
@@ -229,48 +271,36 @@ int main(void)
 
     // display player in win stage, if button is pressed, return to title stage
 
-    title:
+	  switch(game)
+	  {
+	  	  case 1:
+	  		  game = 2;
+	  		  break;
+	  	  case 2:
+
+	  		  break;
+	  	  case 3:
+
+	  		  break;
+	  	  case 4:
+
+	  		  break;
+	  	  case 5:
+
+	  		  break;
+	  }
+
+    //title:
       // make boards for p1 boats, p2 boats, p1 hits, p2 hits and set to 0
 
-      Message_Pointer = &Message1[0];
-      Save_Pointer = &Message1[0];
-      Message_Length = sizeof(Message1) / sizeof(Message1[0]);
-      Delay_msec = 200;
-      Animate_On = 1;
 
-      //********* Reset CRC value ********************
 
-      CRC->CR |= 1; // resetting the generator in the control register by the entire byte length
-
-      //********* Calculate CRC **********************
-
-      for (int i = 0; i < Message_Length; i++) // for loop that updates the CR at every new input found in the CRC
-      {
-        CRC->DR = Message1[i];
-      }
-
-      //********* Read CRC value into CRC_Rx  ********
-
-      CRC_Rx = CRC->DR; // output reads what the CRC assigned to DR
-
-      GPIOD->ODR = CRC_Rx ^ CRC_Tx; // XOR the sent and received CRC values and display on LEDs
-
-      HAL_Delay(5000); // Delay 5 seconds to allow message to scroll
-
-      Animate_On = 0; // Stop scrolling message
-
-      HAL_Delay(1000);        // Delay 1 second
-      for (int i = 0; i < 8; i++) // Clear the display
-      {
-        Seven_Segment_Digit(i, SPACE, 0);
-      }
-
-      HAL_Delay(500); // Delay 1/2 second
-
-      if (GPIOB->ODR == 1)
-    	{
-    	  goto p1_placing;
-    	}
+      // when button is pressed (== 1) goto next game loop step
+//      if (GPIOB->ODR == 1)
+//    	{
+      // clear display, output = 0
+//    	  goto p1_placing;
+//    	}
 
      //p1_placing:
 	 	 //return void;
