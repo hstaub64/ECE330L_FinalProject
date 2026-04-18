@@ -198,6 +198,8 @@ if (Vibrato_Count >= Vibrato_Rate)
 			if (Song[INDEX].note > (Save_Note + Vibrato_Depth)) Song[INDEX].note = Save_Note - Vibrato_Depth;
 
 		}
+
+
 }
 
 
@@ -207,9 +209,28 @@ typedef struct map_s {
 	int vertical[2][16];
 };
 
-
-
-
+// void draw_board(struct map_s m)
+//  {
+//    char board[8] = {0};
+//    for (int i = 0; i < 8; i++)
+//    {
+//      // top segment
+//      board[i] |= map_s.horizontal[0][i]; //something
+//      // middle
+//        board[i] |= map_s.horizontal[1][i];
+//        // bottom
+//        board[i] |= map_s.horizontal[2][i];
+//    }
+//
+//    for (int i = 0; i < 8; i++)
+//    {
+//      // top left
+//      // bottom left
+//      // top right
+//      // bottom right
+//    }
+//    //write to board
+//  }
 
 
 
