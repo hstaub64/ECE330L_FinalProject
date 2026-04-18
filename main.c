@@ -210,9 +210,11 @@ int main(void)
     for (int i = 0; i < 8; i++)
     {
       // top segment
-      board[i] = |= //something;
+      board[i] |= map_s.horizontal[0][i]; //something
       // middle
-      // bottom
+        board[i] |= map_s.horizontal[1][i];      
+        // bottom
+        board[i] |= map_s.horizontal[2][i];    
     }
 
     for (int i = 0; i < 8; i++)
