@@ -202,51 +202,6 @@ int main(void)
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
 
-<<<<<<< HEAD
-  Message_Pointer = &Message1[0];
-        Save_Pointer = &Message1[0];
-        Message_Length = sizeof(Message1) / sizeof(Message1[0]);
-        Delay_msec = 200;
-        Animate_On = 1;
-
-        //********* Reset CRC value ********************
-
-        CRC->CR |= 1; // resetting the generator in the control register by the entire byte length
-
-        //********* Calculate CRC **********************
-
-        for (int i = 0; i < Message_Length; i++) // for loop that updates the CR at every new input found in the CRC
-        {
-          CRC->DR = Message1[i];
-        }
-
-        //********* Read CRC value into CRC_Rx  ********
-
-        CRC_Rx = CRC->DR; // output reads what the CRC assigned to DR
-
-        GPIOD->ODR = CRC_Rx ^ CRC_Tx; // XOR the sent and received CRC values and display on LEDs
-
-        HAL_Delay(5000); // Delay 5 seconds to allow message to scroll
-
-        Animate_On = 0; // Stop scrolling message
-
-        HAL_Delay(1000);        // Delay 1 second
-        for (int i = 0; i < 8; i++) // Clear the display
-        {
-          Seven_Segment_Digit(i, SPACE, 0);
-        }
-
-        HAL_Delay(500); // Delay 1/2 second
-
-        // game modes
-        // 1 = player 1 boat placing
-        // 2 = player 2 boat placing
-        // 3 = player 1 turn
-        // 4 = player 2 turn
-        // 5 = game over
-
-        int game = 1;
-=======
   // game modes
   // 0 = title
   // 1 = player 1 boat placing
@@ -256,7 +211,6 @@ int main(void)
   // 5 = game over
 
   int game = 0;
->>>>>>> 11e06f2 (Updated draw board method and main gameplay loop)
 
   while (1)
   {
@@ -283,30 +237,7 @@ int main(void)
     switch (game)
     {
 
-<<<<<<< HEAD
-	  switch(game)
-	  {
-	  	  case 1:
-	  		  game = 2;
-	  		  break;
-	  	  case 2:
-
-	  		  break;
-	  	  case 3:
-
-	  		  break;
-	  	  case 4:
-
-	  		  break;
-	  	  case 5:
-
-	  		  break;
-	  }
-
-    //title:
-=======
     case 0:
->>>>>>> 11e06f2 (Updated draw board method and main gameplay loop)
       // make boards for p1 boats, p2 boats, p1 hits, p2 hits and set to 0
 
 
@@ -318,15 +249,6 @@ int main(void)
 //    	  goto p1_placing;
 //    	}
 
-<<<<<<< HEAD
-     //p1_placing:
-	 	 //return void;
-      // use pre-defined single boat placement maps, add values to board and display on 7 seg
-      // goto p2
-    //p2_placing:
-      // repeat p1 placing
-    //p1_turn:
-=======
       for (i = 0; i < Message_Length; i++) // for loop that updates the CR at every new input found in the CRC
       {
         CRC->DR = Message1[i];
@@ -363,21 +285,12 @@ int main(void)
       game = 3;
       break;
     case 3:
->>>>>>> 11e06f2 (Updated draw board method and main gameplay loop)
       // check if the entire hit map of player is &= to the entire boat map of opposite player
       // if yes, goto game_over
       // else, continue
       // scroll using the same single boat placement values, confirm placement to hit and write to hit map
       // compare maps; if value of hit map is a value in player's boat map, its a hit, else miss
       // goto p2 turn
-<<<<<<< HEAD
-    //p2_turn:
-      // repeat steps of p1
-      // got to p1
-    //game_over:
-    // have variable to keep track of winner, display win message
-    // if button is pressed, goto title
-=======
       game = 4;
       break;
     case 4:
@@ -391,7 +304,6 @@ int main(void)
       game = 0;
       break;
     }
->>>>>>> 11e06f2 (Updated draw board method and main gameplay loop)
   }
 
   /* USER CODE BEGIN 3 */
