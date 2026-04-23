@@ -112,17 +112,15 @@ char Message2[] =
 
 // possible boat placements
 char SingleSegBoats[16] = {
-    0x3F, 0x06, 0x5b, 0x4f,  // 0 - 3
+    0x3F, 0x06, 0x5b, 0x4f, // 0 - 3
     0x66, 0x6d, 0x7d, 0x07, // 4 - 7
     0x7f, 0x6f, 0x77, 0x7c, // 8 - B
-    0x39, 0x5e, 0x79, 0x71 // C - F
+    0x39, 0x5e, 0x79, 0x71  // C - F
 };
 
 // possible boat placements
 char DoubleSegBoats[16] = {
-    0x06, 0x60
-};
-
+    0x06, 0x60};
 
 /* Declare array for Song */
 Music Song[100];
@@ -204,6 +202,7 @@ int main(void)
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
 
+<<<<<<< HEAD
   Message_Pointer = &Message1[0];
         Save_Pointer = &Message1[0];
         Message_Length = sizeof(Message1) / sizeof(Message1[0]);
@@ -247,6 +246,17 @@ int main(void)
         // 5 = game over
 
         int game = 1;
+=======
+  // game modes
+  // 0 = title
+  // 1 = player 1 boat placing
+  // 2 = player 2 boat placing
+  // 3 = player 1 turn
+  // 4 = player 2 turn
+  // 5 = game over
+
+  int game = 0;
+>>>>>>> 11e06f2 (Updated draw board method and main gameplay loop)
 
   while (1)
   {
@@ -270,7 +280,10 @@ int main(void)
     // at the beginning of each turn, if the hit map &= the opposite players boat map, transition to win
 
     // display player in win stage, if button is pressed, return to title stage
+    switch (game)
+    {
 
+<<<<<<< HEAD
 	  switch(game)
 	  {
 	  	  case 1:
@@ -291,6 +304,9 @@ int main(void)
 	  }
 
     //title:
+=======
+    case 0:
+>>>>>>> 11e06f2 (Updated draw board method and main gameplay loop)
       // make boards for p1 boats, p2 boats, p1 hits, p2 hits and set to 0
 
 
@@ -302,6 +318,7 @@ int main(void)
 //    	  goto p1_placing;
 //    	}
 
+<<<<<<< HEAD
      //p1_placing:
 	 	 //return void;
       // use pre-defined single boat placement maps, add values to board and display on 7 seg
@@ -309,18 +326,72 @@ int main(void)
     //p2_placing:
       // repeat p1 placing
     //p1_turn:
+=======
+      for (i = 0; i < Message_Length; i++) // for loop that updates the CR at every new input found in the CRC
+      {
+        CRC->DR = Message1[i];
+      }
+
+      //********* Read CRC value into CRC_Rx  ********
+
+      CRC_Rx = CRC->DR; // output reads what the CRC assigned to DR
+
+      GPIOD->ODR = CRC_Rx ^ CRC_Tx; // XOR the sent and received CRC values and display on LEDs
+
+      HAL_Delay(5000); // Delay 5 seconds to allow message to scroll
+
+      Animate_On = 0; // Stop scrolling message
+
+      HAL_Delay(1000);        // Delay 1 second
+      for (i = 0; i < 8; i++) // Clear the display
+      {
+        Seven_Segment_Digit(i, SPACE, 0);
+      }
+
+      HAL_Delay(500); // Delay 1/2 second
+      game = 1;
+      break;
+
+    case 1:
+      // use scrolling to find placement on 7seg for array placement
+      // translate 7 seg to map array and continue to draw board when placing
+      // goto player 2 placing
+      game = 2;
+      break;
+    case 2:
+      // repeat p1 placing
+      game = 3;
+      break;
+    case 3:
+>>>>>>> 11e06f2 (Updated draw board method and main gameplay loop)
       // check if the entire hit map of player is &= to the entire boat map of opposite player
       // if yes, goto game_over
       // else, continue
       // scroll using the same single boat placement values, confirm placement to hit and write to hit map
       // compare maps; if value of hit map is a value in player's boat map, its a hit, else miss
       // goto p2 turn
+<<<<<<< HEAD
     //p2_turn:
       // repeat steps of p1
       // got to p1
     //game_over:
     // have variable to keep track of winner, display win message
     // if button is pressed, goto title
+=======
+      game = 4;
+      break;
+    case 4:
+      // repeat steps of p1
+      // got to p1
+      game = 3;
+      break;
+    case 5:
+      // have variable to keep track of winner, display win message
+      // if button is pressed, goto title
+      game = 0;
+      break;
+    }
+>>>>>>> 11e06f2 (Updated draw board method and main gameplay loop)
   }
 
   /* USER CODE BEGIN 3 */
