@@ -200,19 +200,99 @@ if (Vibrato_Count >= Vibrato_Rate)
 		}
 }
 
-
-
 typedef struct map_s {
 	int horizontal[3][8];
 	int vertical[2][16];
 };
 
+void clear_map(Map *m)
+{
+    int r, c;
 
+    for (r = 0; r < 3; r++)
+    {
+        for (c = 0; c < 8; c++)
+        {
+            m->horizontal[r][c] = 0;
+        }
+    }
 
+    for (r = 0; r < 2; r++)
+    {
+        for (c = 0; c < 16; c++)
+        {
+            m->vertical[r][c] = 0;
+        }
+    }
+}
 
+void build_pot_map(Map *m)
+{
+    uint16_t adc_h;
+    uint16_t adc_v;
+    int h_index;
+    int v_index;
+    int h_row, h_col;
+    int v_row, v_col;
 
+    clear_map(m);
 
+    adc_h = read_adc(0);   // PA0 = horizontal selector
+    adc_v = read_adc(1);   // PA1 = vertical selector
 
+    // horizontal has 24 total positions: 3 rows x 8 cols
+    h_index = (adc_h * 24) / 4096;
+    if (h_index > 23) h_index = 23;
+
+    h_row = h_index / 8;
+    h_col = h_index % 8;
+
+    m->horizontal[h_row][h_col] = 1;
+
+    // vertical has 32 total positions: 2 rows x 16 cols
+    v_index = (adc_v * 32) / 4096;
+    if (v_index > 31) v_index = 31;
+
+    v_row = v_index / 16;
+    v_col = v_index % 16;
+
+    m->vertical[v_row][v_col] = 1;
+}
+
+void map_to_digits(Map *m, unsigned char digits[8])
+{
+    int i;
+
+    for (i = 0; i < 8; i++)
+    {
+        unsigned char seg = 0;
+
+        // horizontal segments
+        if (m->horizontal[0][i]) seg |= 0x01;   // top
+        if (m->horizontal[1][i]) seg |= 0x40;   // middle
+        if (m->horizontal[2][i]) seg |= 0x08;   // bottom
+
+        // vertical segments
+        if (m->vertical[0][2*i])     seg |= 0x20; // upper left
+        if (m->vertical[0][2*i + 1]) seg |= 0x02; // upper right
+        if (m->vertical[1][2*i])     seg |= 0x10; // lower left
+        if (m->vertical[1][2*i + 1]) seg |= 0x04; // lower right
+
+        digits[i] = seg;
+    }
+}
+
+void draw_board(Map *m)
+{
+    int i;
+
+    map_to_digits(m, display_digits);
+
+    for (i = 0; i < 8; i++)
+    {
+        Seven_Segment_Digit(i, display_digits[i], 0);
+    }
+}
 
 
 
