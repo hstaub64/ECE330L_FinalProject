@@ -220,14 +220,17 @@ void Composite_Display(void)
     						// Horizontal segments
         // Top bit 0
         {
-            int boat = Boat_Map->horizontal[0][i];
-            int hit  = Hit_Map->horizontal[0][i];
-            int val  = boat ? SEG_BOAT : (hit ? SEG_DIM : SEG_OFF);
-            if (boat && hit) val = SEG_HIT;
+            int boat = Boat_Map->horizontal[0][i]; // Save value at current i position for the top row of placed boats
+            int hit  = Hit_Map->horizontal[0][i]; // Save value at current i position for the top row on the hit map
+            // If boat is not null, save the value for blinking the light
+            // Else, if hit is not null, save the value for a miss
+            // else, save the value for keeping the lights off
+            int val  = boat ? SEG_BOAT : (hit ? SEG_DIM : SEG_OFF); 
+            if (boat && hit) val = SEG_HIT; // if boat is not null and hit is not null, save the value for a hit
             if (val == SEG_BOAT || val == SEG_HIT)
-                Game_Display[i] |= (1 << 0);
+                Game_Display[i] |= (1 << 0); // if value is for placing boats or a hit, turn on the top seg of the 7 seg
             else if (val == SEG_DIM && ramp < DIM_THRESHOLD)
-                Game_Display[i] |= (1 << 0);
+                Game_Display[i] |= (1 << 0); // if the value is for a miss and ramp is less than the dim threshold, turn on the top segment of 7 seg
         }
         // Middle bit 6
         {
