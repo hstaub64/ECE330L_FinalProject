@@ -58,7 +58,6 @@ int DelayValue = 50;
 void SystemClock_Config(void);
 static void MX_GPIO_Init(void);
 
-
 static void MX_TIM7_Init(void);
 void MX_USB_HOST_Process(void);
 
@@ -98,10 +97,6 @@ int Delay_counter = 0;
 int CRC_Tx = 0xaaddf4d0;
 int CRC_Rx = 0;
 
-
-
-
-
 void message_display(char[]);
 
 /* Battle Ship Player 1 Place ships */
@@ -109,49 +104,41 @@ char Message1[] =
     {SPACE, SPACE, SPACE, SPACE, SPACE, SPACE, SPACE, SPACE, SPACE, SPACE,
      CHAR_B, CHAR_A, CHAR_T, CHAR_T, CHAR_L, CHAR_E, SPACE, CHAR_S, CHAR_H, CHAR_I, CHAR_P,
      SPACE, SPACE, SPACE, SPACE, SPACE, SPACE, SPACE, SPACE, SPACE, SPACE,
-	 CHAR_P, CHAR_L, CHAR_A,CHAR_Y, CHAR_E,CHAR_R, CHAR_1, SPACE,
-	 CHAR_P, CHAR_L, CHAR_A, CHAR_C, CHAR_E, SPACE, CHAR_S, CHAR_H, CHAR_I, CHAR_P, CHAR_S};
-
+     CHAR_P, CHAR_L, CHAR_A, CHAR_Y, CHAR_E, CHAR_R, CHAR_1, SPACE,
+     CHAR_P, CHAR_L, CHAR_A, CHAR_C, CHAR_E, SPACE, CHAR_S, CHAR_H, CHAR_I, CHAR_P, CHAR_S};
 
 /* Player 2 Place Ships */
 char Message2[] =
     {SPACE, SPACE, SPACE, SPACE, SPACE, SPACE, SPACE, SPACE, SPACE, SPACE,
-    CHAR_P, CHAR_L, CHAR_A, CHAR_E,CHAR_R, CHAR_2, SPACE, CHAR_P, CHAR_L, CHAR_A, CHAR_C, CHAR_E, SPACE,
-	CHAR_S, CHAR_H, CHAR_I, CHAR_P, CHAR_S,
-     SPACE, SPACE, SPACE, SPACE, SPACE, SPACE, SPACE, SPACE, SPACE, SPACE, SPACE, SPACE, SPACE,SPACE, SPACE, SPACE};
+     CHAR_P, CHAR_L, CHAR_A, CHAR_E, CHAR_R, CHAR_2, SPACE, CHAR_P, CHAR_L, CHAR_A, CHAR_C, CHAR_E, SPACE,
+     CHAR_S, CHAR_H, CHAR_I, CHAR_P, CHAR_S,
+     SPACE, SPACE, SPACE, SPACE, SPACE, SPACE, SPACE, SPACE, SPACE, SPACE, SPACE, SPACE, SPACE, SPACE, SPACE, SPACE};
 
 /* Player 1 attack */
 char Message3[] =
     {SPACE, SPACE, SPACE, SPACE, SPACE, SPACE, SPACE, SPACE, SPACE, SPACE,
-    CHAR_P, CHAR_L, CHAR_A, CHAR_E,CHAR_R, CHAR_1, SPACE,
-	CHAR_A, CHAR_T, CHAR_T, CHAR_A, CHAR_C, CHAR_K, SPACE,
-    SPACE, SPACE, SPACE, SPACE, SPACE, SPACE, SPACE, SPACE, SPACE, SPACE};
+     CHAR_P, CHAR_L, CHAR_A, CHAR_E, CHAR_R, CHAR_1, SPACE,
+     CHAR_A, CHAR_T, CHAR_T, CHAR_A, CHAR_C, CHAR_K, SPACE,
+     SPACE, SPACE, SPACE, SPACE, SPACE, SPACE, SPACE, SPACE, SPACE, SPACE};
 
 /* Player 2 attack */
 char Message4[] =
     {SPACE, SPACE, SPACE, SPACE, SPACE, SPACE, SPACE, SPACE, SPACE, SPACE,
-    CHAR_P, CHAR_L, CHAR_A, CHAR_E,CHAR_R, CHAR_2, SPACE,
-	CHAR_A, CHAR_T, CHAR_T, CHAR_A, CHAR_C, CHAR_K,
+     CHAR_P, CHAR_L, CHAR_A, CHAR_E, CHAR_R, CHAR_2, SPACE,
+     CHAR_A, CHAR_T, CHAR_T, CHAR_A, CHAR_C, CHAR_K,
      SPACE, SPACE, SPACE, SPACE, SPACE, SPACE, SPACE, SPACE, SPACE, SPACE};
 
-
-
-
-
-
-
-
-// Block code to call to different messages above 
+// Block code to call to different messages above
 
 void Start_Message(char *msg, int length)
 {
-    Cursor_On = 0;
-    Animate_On = 1;
+  Cursor_On = 0;
+  Animate_On = 1;
 
-    Message_Pointer = msg;
-    Save_Pointer = msg;
-    Message_Length = length;
-    Delay_msec = 200;
+  Message_Pointer = msg;
+  Save_Pointer = msg;
+  Message_Length = length;
+  Delay_msec = 200;
 }
 
 /* Declare array for Song */
@@ -193,7 +180,7 @@ int main(void)
 
     HAL_Delay(500);           // Delay 1/2 second
 
-    HAL_Delay(1000);     
+    HAL_Delay(1000);
   MX_GPIO_Init();
 
 
@@ -201,7 +188,7 @@ int main(void)
   // MX_I2S3_Init();
   // MX_SPI1_Init();
   // MX_USB_HOST_Init();
-  	  MX_TIM7_Init();
+      MX_TIM7_Init();
   /* USER CODE BEGIN 2 */
 
   /*** Configure GPIOs ***/
@@ -231,45 +218,56 @@ int main(void)
   TIM7->DIER |= 1; // Enable timer 7 interrupt
   TIM7->CR1 |= 1;  // Enable timer counting
 
-
-  int game  = 0;
-  int phase = 0;   // 0 = show message, 1 is waiting for input
+  int game = 0;
+  int phase = 0; // 0 = show message, 1 is waiting for input
   int i;
 
   // block to check if map has enough segments placed
-  int count_map_segments(map_t *m)
+  int count_map_segments(map_t * m)
   {
-      int count = 0;
-      for (int i = 0; i < 8; i++) {
-          if (m->horizontal[0][i]) count++;
-          if (m->horizontal[1][i]) count++;
-          if (m->horizontal[2][i]) count++;
-          if (m->vertical[0][i])   count++;
-          if (m->vertical[1][i])   count++;
-          if (m->vertical[0][i+8]) count++;
-          if (m->vertical[1][i+8]) count++;
-      }
-      return count;
+    int count = 0;
+    for (int i = 0; i < 8; i++)
+    {
+      if (m->horizontal[0][i])
+        count++;
+      if (m->horizontal[1][i])
+        count++;
+      if (m->horizontal[2][i])
+        count++;
+      if (m->vertical[0][i])
+        count++;
+      if (m->vertical[1][i])
+        count++;
+      if (m->vertical[0][i + 8])
+        count++;
+      if (m->vertical[1][i + 8])
+        count++;
+    }
+    return count;
   }
 
   // block to check if all ships on boat_map are hit in hit_maps
-  int check_win(map_t *hit_map, map_t *boat_map)
+  int check_win(map_t * hit_map, map_t * boat_map)
   {
-      for (int i = 0; i < 8; i++) {
-          if (boat_map->horizontal[0][i] && !hit_map->horizontal[0][i]) return 0;
-          if (boat_map->horizontal[1][i] && !hit_map->horizontal[1][i]) return 0;
-          if (boat_map->horizontal[2][i] && !hit_map->horizontal[2][i]) return 0;
-          if (boat_map->vertical[0][i]   && !hit_map->vertical[0][i])   return 0;
-          if (boat_map->vertical[1][i]   && !hit_map->vertical[1][i])   return 0;
-          if (boat_map->vertical[0][i+8] && !hit_map->vertical[0][i+8]) return 0;
-          if (boat_map->vertical[1][i+8] && !hit_map->vertical[1][i+8]) return 0;
-      }
-      return 1;
+    for (int i = 0; i < 8; i++)
+    {
+      if (boat_map->horizontal[0][i] && !hit_map->horizontal[0][i])
+        return 0;
+      if (boat_map->horizontal[1][i] && !hit_map->horizontal[1][i])
+        return 0;
+      if (boat_map->horizontal[2][i] && !hit_map->horizontal[2][i])
+        return 0;
+      if (boat_map->vertical[0][i] && !hit_map->vertical[0][i])
+        return 0;
+      if (boat_map->vertical[1][i] && !hit_map->vertical[1][i])
+        return 0;
+      if (boat_map->vertical[0][i + 8] && !hit_map->vertical[0][i + 8])
+        return 0;
+      if (boat_map->vertical[1][i + 8] && !hit_map->vertical[1][i + 8])
+        return 0;
+    }
+    return 1;
   }
-
-
-
-
 
   while (1)
   {
@@ -277,132 +275,133 @@ int main(void)
     switch (game)
     {
 
-
-
-    case 0:// message of game name and placing ships instruction
+    case 0: // message of game name and placing ships instruction
     {
-        Start_Message(Message1, sizeof(Message1) / sizeof(Message1[0]));
+      Start_Message(Message1, sizeof(Message1) / sizeof(Message1[0]));
 
-        for (i = 0; i < Message_Length; i++)  // for loop that updates the CR at every new input found in the CRC
-        {
-            CRC->DR = Message1[i];
-        }
-        //********* Read CRC value into CRC_Rx  ********
-        CRC_Rx = CRC->DR;// output reads what the CRC assigned to DR
-        GPIOD->ODR = CRC_Rx ^ CRC_Tx;// XOR the sent and received CRC values and display on LEDs
+      for (i = 0; i < Message_Length; i++) // for loop that updates the CR at every new input found in the CRC
+      {
+        CRC->DR = Message1[i];
+      }
+      //********* Read CRC value into CRC_Rx  ********
+      CRC_Rx = CRC->DR;             // output reads what the CRC assigned to DR
+      GPIOD->ODR = CRC_Rx ^ CRC_Tx; // XOR the sent and received CRC values and display on LEDs
 
-        HAL_Delay(10000); // Delay 5 seconds to allow message to scroll
+      HAL_Delay(10000); // Delay 5 seconds to allow message to scroll
 
-        Animate_On = 0;// Stop scrolling message
+      Animate_On = 0; // Stop scrolling message
 
-        HAL_Delay(1000);// Delay 1 second
-        for (i = 0; i < 8; i++)// Clear the display
-        {
-            Seven_Segment_Digit(i, SPACE, 0);
-        }
+      HAL_Delay(1000);        // Delay 1 second
+      for (i = 0; i < 8; i++) // Clear the display
+      {
+        Seven_Segment_Digit(i, SPACE, 0);
+      }
 
-        HAL_Delay(500);// Delay 1/2 second
-        game = 1;
-        break;
+      HAL_Delay(500); // Delay 1/2 second
+      game = 1;
+      break;
     }
-
 
     case 1:
     {
-    				// Set SysTick to draw P1's boat map (no hits yet)
-    	            Boat_Map = &Player_Map;
-    	            Hit_Map  = &P1_Hits;
+      // Set SysTick to draw P1's boat map (no hits yet)
+      Boat_Map = &Player_Map;
+      Hit_Map = &P1_Hits;
 
-    	            Animate_On = 0;
-    	            Cursor_On  = 1;
-    	            Delay_msec = 50;
+      Animate_On = 0;
+      Cursor_On = 1;
+      Delay_msec = 50;
 
-    	            // PA1  digit (0-7), PA2  segment (0-6)
-    	            Cursor_Digit   = (Read_ADC(1) * 8) / 4096;
-    	            Cursor_Segment = seg_cycle[(Read_ADC(2) * 7) / 4096];
+      // PA1  digit (0-7), PA2  segment (0-6)
+      Cursor_Digit = (Read_ADC(1) * 8) / 4096;
+      Cursor_Segment = seg_cycle[(Read_ADC(2) * 7) / 4096];
 
-    	            int new_press = Read_Buttons(&last_btn1, &dbnc1);
+      int new_press = Read_Buttons(&last_btn1, &dbnc1);
 
-    	            // PC10 = place a ship segment
-    	            if (new_press & (1 << 10))
-    	                Place_Segment(&Player_Map, Cursor_Digit, Cursor_Segment);
+      // PC10 = place a ship segment
+      if (new_press & (1 << 10))
+        Place_Segment(&Player_Map, Cursor_Digit, Cursor_Segment);
 
-    	            // PC11 = done  require exactly 7 segments (3 single + 2 double)
-    	            if ((new_press & (1 << 11)) && Count_Segments(&Player_Map) >= 7)
-    	            {
-    	                Cursor_On = 0;
-    	                phase = 0;
-    	                game  = 2;
-    	            }
+      // PC11 = done  require exactly 7 segments (3 single + 2 double)
+      if ((new_press & (1 << 11)) && Count_Segments(&Player_Map) >= 7)
+      {
+        Cursor_On = 0;
+        phase = 0;
+        game = 2;
+      }
 
-
-        break;
+      break;
     }
-
 
     case 2:
     {
-        Start_Message(Message2, sizeof(Message2) / sizeof(Message2[0]));
+      Start_Message(Message2, sizeof(Message2) / sizeof(Message2[0]));
 
-        HAL_Delay(5000);
-        
-        // game logic
+      HAL_Delay(5000);
 
-        break;
+      // Set SysTick to draw P1's boat map (no hits yet)
+      Boat_Map = &Player2_Map;
+      Hit_Map = &P2_Hits;
+
+      Animate_On = 0;
+      Cursor_On = 1;
+      Delay_msec = 50;
+
+      // PA1  digit (0-7), PA2  segment (0-6)
+      Cursor_Digit = (Read_ADC(1) * 8) / 4096;
+      Cursor_Segment = seg_cycle[(Read_ADC(2) * 7) / 4096];
+
+      int new_press = Read_Buttons(&last_btn1, &dbnc1);
+
+      // PC10 = place a ship segment
+      if (new_press & (1 << 10))
+        Place_Segment(&Player_Map, Cursor_Digit, Cursor_Segment);
+
+      // PC11 = done  require exactly 7 segments (3 single + 2 double)
+      if ((new_press & (1 << 11)) && Count_Segments(&Player_Map) >= 7)
+      {
+        Cursor_On = 0;
+        phase = 0;
+        game = 2;
+      }
+
+      break;
     }
 
     case 3:
     {
-        Start_Message(Message3, sizeof(Message3) / sizeof(Message3[0]));
+      Start_Message(Message3, sizeof(Message3) / sizeof(Message3[0]));
 
-
-
-        game = 4;
-        break;
+      game = 4;
+      break;
     }
 
     case 4:
     {
-        Start_Message(Message4, sizeof(Message4) / sizeof(Message4[0]));
+      Start_Message(Message4, sizeof(Message4) / sizeof(Message4[0]));
 
-
-
-        game = 5;
-        break;
+      game = 5;
+      break;
     }
 
     case 5:
     {
 
-        break;
+      break;
     }
-
-
-
-
-
-
-
-
 
     default:
     {
-        game = 0;
-        break;
+      game = 0;
+      break;
     }
-}
-
-
-
-
-
     }
   }
+}
 
-  /* USER CODE BEGIN 3 */
+/* USER CODE BEGIN 3 */
 
-  /* USER CODE END 3 */
-
+/* USER CODE END 3 */
 
 /**
  * @brief System Clock Configuration
@@ -551,7 +550,6 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   HAL_GPIO_Init(B1_GPIO_Port, &GPIO_InitStruct);
 
-
   /* Configure GPIO pins : PC10 PC11 */
   GPIO_InitStruct.Pin = GPIO_PIN_10 | GPIO_PIN_11;
   GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
@@ -561,7 +559,6 @@ static void MX_GPIO_Init(void)
   /*Configure GPIO pin : BOOT1_Pin */
   GPIO_InitStruct.Pin = BOOT1_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
-
 
   Message_Pointer = &Message1[0];
   Save_Pointer = &Message1[0];
