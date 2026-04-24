@@ -1,20 +1,20 @@
 /* USER CODE BEGIN Header */
 /**
-  ******************************************************************************
-  * @file           : main.c  LAB6
-  * @brief          : Main program body
-  ******************************************************************************
-  * @attention
-  *
-  * Copyright (c) 2022 STMicroelectronics.
-  * All rights reserved.
-  *
-  * This software is licensed under terms that can be found in the LICENSE file
-  * in the root directory of this software component.
-  * If no LICENSE file comes with this software, it is provided AS-IS.
-  *
-  ******************************************************************************
-  */
+ ******************************************************************************
+ * @file           : main.c  LAB6
+ * @brief          : Main program body
+ ******************************************************************************
+ * @attention
+ *
+ * Copyright (c) 2022 STMicroelectronics.
+ * All rights reserved.
+ *
+ * This software is licensed under terms that can be found in the LICENSE file
+ * in the root directory of this software component.
+ * If no LICENSE file comes with this software, it is provided AS-IS.
+ *
+ ******************************************************************************
+ */
 /* USER CODE END Header */
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
@@ -33,8 +33,6 @@
 
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
-
-
 
 /* USER CODE END PD */
 
@@ -59,13 +57,15 @@ int DelayValue = 50;
 /* Private function prototypes -----------------------------------------------*/
 void SystemClock_Config(void);
 static void MX_GPIO_Init(void);
+
+
 static void MX_TIM7_Init(void);
 void MX_USB_HOST_Process(void);
 
 /* USER CODE BEGIN PFP */
-//void Play_Note(int note,int size,int tempo,int space);
-//extern void Seven_Segment_Digit (unsigned char digit, unsigned char hex_char, unsigned char dot);
-//extern void Seven_Segment(unsigned int HexValue);
+// void Play_Note(int note,int size,int tempo,int space);
+// extern void Seven_Segment_Digit (unsigned char digit, unsigned char hex_char, unsigned char dot);
+// extern void Seven_Segment(unsigned int HexValue);
 
 /* USER CODE END PFP */
 
@@ -95,33 +95,74 @@ char *Message_Pointer;
 char *Save_Pointer;
 int Delay_msec = 0;
 int Delay_counter = 0;
-
 int CRC_Tx = 0xaaddf4d0;
 int CRC_Rx = 0;
 
+
+
+
+
 void message_display(char[]);
 
-/* HELLO ECE-330L */
+/* Battle Ship Player 1 Place ships */
 char Message1[] =
-		{SPACE,SPACE,SPACE,SPACE,SPACE,SPACE,SPACE,SPACE,SPACE,SPACE,
-		CHAR_B,CHAR_A,CHAR_T,CHAR_T,CHAR_L,CHAR_E,SPACE,CHAR_S,CHAR_H,CHAR_I,CHAR_P,
-		SPACE,SPACE,SPACE,SPACE,SPACE,SPACE,SPACE,SPACE,SPACE,SPACE};
+    {SPACE, SPACE, SPACE, SPACE, SPACE, SPACE, SPACE, SPACE, SPACE, SPACE,
+     CHAR_B, CHAR_A, CHAR_T, CHAR_T, CHAR_L, CHAR_E, SPACE, CHAR_S, CHAR_H, CHAR_I, CHAR_P,
+     SPACE, SPACE, SPACE, SPACE, SPACE, SPACE, SPACE, SPACE, SPACE, SPACE,
+	 CHAR_P, CHAR_L, CHAR_A,CHAR_Y, CHAR_E,CHAR_R, CHAR_1, SPACE,
+	 CHAR_P, CHAR_L, CHAR_A, CHAR_C, CHAR_E, SPACE, CHAR_S, CHAR_H, CHAR_I, CHAR_P, CHAR_S};
 
+
+/* Player 2 Place Ships */
 char Message2[] =
-		{SPACE,SPACE,SPACE,SPACE,SPACE,SPACE,SPACE,SPACE,SPACE,SPACE,
-		CHAR_P,CHAR_L,CHAR_A,CHAR_C,CHAR_E, SPACE,CHAR_S,CHAR_H,CHAR_I,CHAR_P,CHAR_S,
-		SPACE,SPACE,SPACE,SPACE,SPACE,SPACE,SPACE,SPACE,SPACE,SPACE};
+    {SPACE, SPACE, SPACE, SPACE, SPACE, SPACE, SPACE, SPACE, SPACE, SPACE,
+    CHAR_P, CHAR_L, CHAR_A, CHAR_E,CHAR_R, CHAR_2, SPACE, CHAR_P, CHAR_L, CHAR_A, CHAR_C, CHAR_E, SPACE,
+	CHAR_S, CHAR_H, CHAR_I, CHAR_P, CHAR_S,
+     SPACE, SPACE, SPACE, SPACE, SPACE, SPACE, SPACE, SPACE, SPACE, SPACE, SPACE, SPACE, SPACE,SPACE, SPACE, SPACE};
+
+/* Player 1 attack */
+char Message3[] =
+    {SPACE, SPACE, SPACE, SPACE, SPACE, SPACE, SPACE, SPACE, SPACE, SPACE,
+    CHAR_P, CHAR_L, CHAR_A, CHAR_E,CHAR_R, CHAR_1, SPACE,
+	CHAR_A, CHAR_T, CHAR_T, CHAR_A, CHAR_C, CHAR_K, SPACE,
+    SPACE, SPACE, SPACE, SPACE, SPACE, SPACE, SPACE, SPACE, SPACE, SPACE};
+
+/* Player 2 attack */
+char Message4[] =
+    {SPACE, SPACE, SPACE, SPACE, SPACE, SPACE, SPACE, SPACE, SPACE, SPACE,
+    CHAR_P, CHAR_L, CHAR_A, CHAR_E,CHAR_R, CHAR_2, SPACE,
+	CHAR_A, CHAR_T, CHAR_T, CHAR_A, CHAR_C, CHAR_K,
+     SPACE, SPACE, SPACE, SPACE, SPACE, SPACE, SPACE, SPACE, SPACE, SPACE};
+
+
+
+
+
+
+
+
+// Block code to call to different messages above 
+
+void Start_Message(char *msg, int length)
+{
+    Cursor_On = 0;
+    Animate_On = 1;
+
+    Message_Pointer = msg;
+    Save_Pointer = msg;
+    Message_Length = length;
+    Delay_msec = 200;
+}
 
 /* Declare array for Song */
 Music Song[100];
 
-
 /* USER CODE END 0 */
 
 /**
-  * @brief  The application entry point.
-  * @retval int
-  */
+ * @brief  The application entry point.
+ * @retval int
+ */
 int main(void)
 {
   /* USER CODE BEGIN 1 */
@@ -145,36 +186,38 @@ int main(void)
   /* USER CODE END SysInit */
 
   /* Initialize all c
-	  		  Seven_Segment_Digit(i,SPACE,0);
-	  	  }
+          Seven_Segment_Digit(i,SPACE,0);
+        }
 
 
 
-	  HAL_Delay(500);           // Delay 1/2 second
+    HAL_Delay(500);           // Delay 1/2 second
 
-	  HAL_Delay(1000);      onfigured peripherals */
+    HAL_Delay(1000);     
   MX_GPIO_Init();
-  //MX_I2C1_Init();
-  //MX_I2S3_Init();
-  //MX_SPI1_Init();
-  //MX_USB_HOST_Init();
-  MX_TIM7_Init();
+
+
+  // MX_I2C1_Init();
+  // MX_I2S3_Init();
+  // MX_SPI1_Init();
+  // MX_USB_HOST_Init();
+  	  MX_TIM7_Init();
   /* USER CODE BEGIN 2 */
 
   /*** Configure GPIOs ***/
-  GPIOD->MODER = 0x55555555; // set all Port D pins to outputs
+  GPIOD->MODER = 0x55555555;  // set all Port D pins to outputs
   GPIOA->MODER |= 0x000000FF; // Port A mode register - make A0 to A3 analog pins
   GPIOE->MODER |= 0x55555555; // Port E mode register - make E0 to E15 outputs
-  GPIOC->MODER |= 0x0; // Port C mode register - all inputs
-  GPIOE->ODR = 0xFFFF; // Set all Port E pins high
+  GPIOC->MODER |= 0x0;        // Port C mode register - all inputs
+  GPIOE->ODR = 0xFFFF;        // Set all Port E pins high
 
   /*** Configure ADC1 ***/
-  RCC->APB2ENR |= 1<<8;  // Turn on ADC1 clock by forcing bit 8 to 1 while keeping other bits unchanged
-  ADC1->SMPR2 |= 1; // 15 clock cycles per sample
-  ADC1->CR2 |= 1;        // Turn on ADC1 by forcing bit 0 to 1 while keeping other bits unchanged
+  RCC->APB2ENR |= 1 << 8; // Turn on ADC1 clock by forcing bit 8 to 1 while keeping other bits unchanged
+  ADC1->SMPR2 |= 1;       // 15 clock cycles per sample
+  ADC1->CR2 |= 1;         // Turn on ADC1 by forcing bit 0 to 1 while keeping other bits unchanged
 
   /*** Turn on CRC Clock in AHB1ENR to enable CRC hardware ***/
-  RCC->AHB1ENR |= 1<<12; // registar size is 12 bits and enables the CRC clock
+  RCC->AHB1ENR |= 1 << 12; // registar size is 12 bits and enables the CRC clock
 
   /*****************************************************************************************************
   These commands are handled as part of the MX_TIM7_Init() function and don't need to be enabled
@@ -183,80 +226,201 @@ int main(void)
   NVIC_EnableIRQ(TIM7_IRQn); // Enable Timer 7 Interrupt in the NVIC controller
   *******************************************************************************************************/
 
-  TIM7->PSC = 199; //250Khz timer clock prescaler value, 250Khz = 50Mhz / 200
-  TIM7->ARR = 1; // Count to 1 then generate interrupt (divide by 2), 125Khz interrupt rate to increment byte counter for 78Hz PWM
+  TIM7->PSC = 199; // 250Khz timer clock prescaler value, 250Khz = 50Mhz / 200
+  TIM7->ARR = 1;   // Count to 1 then generate interrupt (divide by 2), 125Khz interrupt rate to increment byte counter for 78Hz PWM
   TIM7->DIER |= 1; // Enable timer 7 interrupt
-  TIM7->CR1 |= 1; // Enable timer counting
+  TIM7->CR1 |= 1;  // Enable timer counting
 
-  /* USER CODE END 2 */
 
-  /* Infinite loop */
-  /* USER CODE BEGIN WHILE */
+  int game  = 0;
+  int phase = 0;   // 0 = show message, 1 is waiting for input
+  int i;
 
-  while(1)
+  // block to check if map has enough segments placed
+  int count_map_segments(map_t *m)
   {
-	  int i;
+      int count = 0;
+      for (int i = 0; i < 8; i++) {
+          if (m->horizontal[0][i]) count++;
+          if (m->horizontal[1][i]) count++;
+          if (m->horizontal[2][i]) count++;
+          if (m->vertical[0][i])   count++;
+          if (m->vertical[1][i])   count++;
+          if (m->vertical[0][i+8]) count++;
+          if (m->vertical[1][i+8]) count++;
+      }
+      return count;
+  }
 
-
-	  	  Message_Pointer = &Message1[0];
-	  	  Save_Pointer = &Message1[0];
-	  	  Message_Length = sizeof(Message1)/sizeof(Message1[0]);
-	  	  Delay_msec = 200;
-	  	  Animate_On = 1;
-
-	  	  //********* Reset CRC value ********************
-
-	  	  CRC->CR |= 1; // resetting the generator in the control register by the entire byte length
-
-	  	  //********* Calculate CRC **********************
-
-	  	  for (i=0; i < Message_Length; i++) // for loop that updates the CR at every new input found in the CRC
-	  	  {
-	  		  CRC->DR = Message1[i];
-	  	  }
-
-	  	  //********* Read CRC value into CRC_Rx  ********
-
-	  	  CRC_Rx = CRC->DR; //output reads what the CRC assigned to DR
-
-	  	  GPIOD->ODR = CRC_Rx ^ CRC_Tx;  //XOR the sent and received CRC values and display on LEDs
-
-	  	  HAL_Delay(5000);           // Delay 5 seconds to allow message to scroll
-
-	  	  Animate_On = 0;            // Stop scrolling message
-
-	  	  HAL_Delay(1000);           // Delay 1 second
-	  	  for (i=0 ; i<8 ; i++)      // Clear the display
-	  	  	  {
-	  	  		  Seven_Segment_Digit(i,SPACE,0);
-	  	  	  }
-
-	  	  HAL_Delay(500);           // Delay 1/2 second
+  // block to check if all ships on boat_map are hit in hit_maps
+  int check_win(map_t *hit_map, map_t *boat_map)
+  {
+      for (int i = 0; i < 8; i++) {
+          if (boat_map->horizontal[0][i] && !hit_map->horizontal[0][i]) return 0;
+          if (boat_map->horizontal[1][i] && !hit_map->horizontal[1][i]) return 0;
+          if (boat_map->horizontal[2][i] && !hit_map->horizontal[2][i]) return 0;
+          if (boat_map->vertical[0][i]   && !hit_map->vertical[0][i])   return 0;
+          if (boat_map->vertical[1][i]   && !hit_map->vertical[1][i])   return 0;
+          if (boat_map->vertical[0][i+8] && !hit_map->vertical[0][i+8]) return 0;
+          if (boat_map->vertical[1][i+8] && !hit_map->vertical[1][i+8]) return 0;
+      }
+      return 1;
   }
 
 
-    /* USER CODE BEGIN 3 */
 
-  /* USER CODE END 3 */
+
+
+  while (1)
+  {
+
+    switch (game)
+    {
+
+
+
+    case 0:// message of game name and placing ships instruction
+    {
+        Start_Message(Message1, sizeof(Message1) / sizeof(Message1[0]));
+
+        for (i = 0; i < Message_Length; i++)  // for loop that updates the CR at every new input found in the CRC
+        {
+            CRC->DR = Message1[i];
+        }
+        //********* Read CRC value into CRC_Rx  ********
+        CRC_Rx = CRC->DR;// output reads what the CRC assigned to DR
+        GPIOD->ODR = CRC_Rx ^ CRC_Tx;// XOR the sent and received CRC values and display on LEDs
+
+        HAL_Delay(10000); // Delay 5 seconds to allow message to scroll
+
+        Animate_On = 0;// Stop scrolling message
+
+        HAL_Delay(1000);// Delay 1 second
+        for (i = 0; i < 8; i++)// Clear the display
+        {
+            Seven_Segment_Digit(i, SPACE, 0);
+        }
+
+        HAL_Delay(500);// Delay 1/2 second
+        game = 1;
+        break;
+    }
+
+
+    case 1:
+    {
+    				// Set SysTick to draw P1's boat map (no hits yet)
+    	            Boat_Map = &Player_Map;
+    	            Hit_Map  = &P1_Hits;
+
+    	            Animate_On = 0;
+    	            Cursor_On  = 1;
+    	            Delay_msec = 50;
+
+    	            // PA1  digit (0-7), PA2  segment (0-6)
+    	            Cursor_Digit   = (Read_ADC(1) * 8) / 4096;
+    	            Cursor_Segment = seg_cycle[(Read_ADC(2) * 7) / 4096];
+
+    	            int new_press = Read_Buttons(&last_btn1, &dbnc1);
+
+    	            // PC10 = place a ship segment
+    	            if (new_press & (1 << 10))
+    	                Place_Segment(&Player_Map, Cursor_Digit, Cursor_Segment);
+
+    	            // PC11 = done  require exactly 7 segments (3 single + 2 double)
+    	            if ((new_press & (1 << 11)) && Count_Segments(&Player_Map) >= 7)
+    	            {
+    	                Cursor_On = 0;
+    	                phase = 0;
+    	                game  = 2;
+    	            }
+
+
+        break;
+    }
+
+
+    case 2:
+    {
+        Start_Message(Message2, sizeof(Message2) / sizeof(Message2[0]));
+
+        HAL_Delay(5000);
+        
+        // game logic
+
+        break;
+    }
+
+    case 3:
+    {
+        Start_Message(Message3, sizeof(Message3) / sizeof(Message3[0]));
+
+
+
+        game = 4;
+        break;
+    }
+
+    case 4:
+    {
+        Start_Message(Message4, sizeof(Message4) / sizeof(Message4[0]));
+
+
+
+        game = 5;
+        break;
+    }
+
+    case 5:
+    {
+
+        break;
+    }
+
+
+
+
+
+
+
+
+
+    default:
+    {
+        game = 0;
+        break;
+    }
 }
 
+
+
+
+
+    }
+  }
+
+  /* USER CODE BEGIN 3 */
+
+  /* USER CODE END 3 */
+
+
 /**
-  * @brief System Clock Configuration
-  * @retval None
-  */
+ * @brief System Clock Configuration
+ * @retval None
+ */
 void SystemClock_Config(void)
 {
   RCC_OscInitTypeDef RCC_OscInitStruct = {0};
   RCC_ClkInitTypeDef RCC_ClkInitStruct = {0};
 
   /** Configure the main internal regulator output voltage
-  */
+   */
   __HAL_RCC_PWR_CLK_ENABLE();
   __HAL_PWR_VOLTAGESCALING_CONFIG(PWR_REGULATOR_VOLTAGE_SCALE1);
 
   /** Initializes the RCC Oscillators according to the specified parameters
-  * in the RCC_OscInitTypeDef structure.
-  */
+   * in the RCC_OscInitTypeDef structure.
+   */
   RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSE;
   RCC_OscInitStruct.HSEState = RCC_HSE_ON;
   RCC_OscInitStruct.PLL.PLLState = RCC_PLL_ON;
@@ -271,9 +435,8 @@ void SystemClock_Config(void)
   }
 
   /** Initializes the CPU, AHB and APB buses clocks
-  */
-  RCC_ClkInitStruct.ClockType = RCC_CLOCKTYPE_HCLK|RCC_CLOCKTYPE_SYSCLK
-                              |RCC_CLOCKTYPE_PCLK1|RCC_CLOCKTYPE_PCLK2;
+   */
+  RCC_ClkInitStruct.ClockType = RCC_CLOCKTYPE_HCLK | RCC_CLOCKTYPE_SYSCLK | RCC_CLOCKTYPE_PCLK1 | RCC_CLOCKTYPE_PCLK2;
   RCC_ClkInitStruct.SYSCLKSource = RCC_SYSCLKSOURCE_PLLCLK;
   RCC_ClkInitStruct.AHBCLKDivider = RCC_SYSCLK_DIV1;
   RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV4;
@@ -286,23 +449,22 @@ void SystemClock_Config(void)
 }
 
 /**
-  * @brief I2C1 Initialization Function
-  * @param None
-  * @retval None
-  */
+ * @brief I2C1 Initialization Function
+ * @param None
+ * @retval None
+ */
 
 /**
-  * @brief I2S3 Initialization Function
-  * @param None
-  * @retval None
-  */
-
+ * @brief I2S3 Initialization Function
+ * @param None
+ * @retval None
+ */
 
 /**
-  * @brief TIM7 Initialization Function
-  * @param None
-  * @retval None
-  */
+ * @brief TIM7 Initialization Function
+ * @param None
+ * @retval None
+ */
 static void MX_TIM7_Init(void)
 {
 
@@ -333,14 +495,13 @@ static void MX_TIM7_Init(void)
   /* USER CODE BEGIN TIM7_Init 2 */
 
   /* USER CODE END TIM7_Init 2 */
-
 }
 
 /**
-  * @brief GPIO Initialization Function
-  * @param None
-  * @retval None
-  */
+ * @brief GPIO Initialization Function
+ * @param None
+ * @retval None
+ */
 static void MX_GPIO_Init(void)
 {
   GPIO_InitTypeDef GPIO_InitStruct = {0};
@@ -360,8 +521,7 @@ static void MX_GPIO_Init(void)
   HAL_GPIO_WritePin(OTG_FS_PowerSwitchOn_GPIO_Port, OTG_FS_PowerSwitchOn_Pin, GPIO_PIN_SET);
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOD, LD4_Pin|LD3_Pin|LD5_Pin|LD6_Pin
-                          |Audio_RST_Pin, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(GPIOD, LD4_Pin | LD3_Pin | LD5_Pin | LD6_Pin | Audio_RST_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pin : CS_I2C_SPI_Pin */
   GPIO_InitStruct.Pin = CS_I2C_SPI_Pin;
@@ -391,13 +551,21 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   HAL_GPIO_Init(B1_GPIO_Port, &GPIO_InitStruct);
 
+
+  /* Configure GPIO pins : PC10 PC11 */
+  GPIO_InitStruct.Pin = GPIO_PIN_10 | GPIO_PIN_11;
+  GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
+  GPIO_InitStruct.Pull = GPIO_PULLDOWN;
+  HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
+
   /*Configure GPIO pin : BOOT1_Pin */
   GPIO_InitStruct.Pin = BOOT1_Pin;
-  GPIO_InitStruct.Mode = GPIO_MODE_INPUT; int i,j;
+  GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
+
 
   Message_Pointer = &Message1[0];
   Save_Pointer = &Message1[0];
-  Message_Length = sizeof(Message1)/sizeof(Message1[0]);
+  Message_Length = sizeof(Message1) / sizeof(Message1[0]);
   Delay_msec = 200;
   Animate_On = 1;
 
@@ -414,8 +582,7 @@ static void MX_GPIO_Init(void)
 
   /*Configure GPIO pins : LD4_Pin LD3_Pin LD5_Pin LD6_Pin
                            Audio_RST_Pin */
-  GPIO_InitStruct.Pin = LD4_Pin|LD3_Pin|LD5_Pin|LD6_Pin
-                          |Audio_RST_Pin;
+  GPIO_InitStruct.Pin = LD4_Pin | LD3_Pin | LD5_Pin | LD6_Pin | Audio_RST_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
@@ -432,19 +599,16 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Mode = GPIO_MODE_EVT_RISING;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   HAL_GPIO_Init(MEMS_INT2_GPIO_Port, &GPIO_InitStruct);
-
 }
 
 /* USER CODE BEGIN 4 */
 
 /* USER CODE END 4 */
 
-
-
 /**
-  * @brief  This function is executed in case of error occurrence.
-  * @retval None
-  */
+ * @brief  This function is executed in case of error occurrence.
+ * @retval None
+ */
 void Error_Handler(void)
 {
   /* USER CODE BEGIN Error_Handler_Debug */
@@ -456,14 +620,14 @@ void Error_Handler(void)
   /* USER CODE END Error_Handler_Debug */
 }
 
-#ifdef  USE_FULL_ASSERT
+#ifdef USE_FULL_ASSERT
 /**
-  * @brief  Reports the name of the source file and the source line number
-  *         where the assert_param error has occurred.
-  * @param  file: pointer to the source file name
-  * @param  line: assert_param error line source number
-  * @retval None
-  */
+ * @brief  Reports the name of the source file and the source line number
+ *         where the assert_param error has occurred.
+ * @param  file: pointer to the source file name
+ * @param  line: assert_param error line source number
+ * @retval None
+ */
 void assert_failed(uint8_t *file, uint32_t line)
 {
   /* USER CODE BEGIN 6 */
