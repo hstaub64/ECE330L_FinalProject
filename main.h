@@ -3,22 +3,10 @@
   ******************************************************************************
   * @file           : main.h LAB6
   * @brief          : Header for main.c file.
-  *                   This file contains the common defines of the application.
-  ******************************************************************************
-  * @attention
-  *
-  * Copyright (c) 2022 STMicroelectronics.
-  * All rights reserved.
-  *
-  * This software is licensed under terms that can be found in the LICENSE file
-  * in the root directory of this software component.
-  * If no LICENSE file comes with this software, it is provided AS-IS.
-  *
   ******************************************************************************
   */
 /* USER CODE END Header */
 
-/* Define to prevent recursive inclusion -------------------------------------*/
 #ifndef __MAIN_H
 #define __MAIN_H
 
@@ -26,29 +14,52 @@
 extern "C" {
 #endif
 
-/* Includes ------------------------------------------------------------------*/
 #include "stm32f4xx_hal.h"
 
-/* Private includes ----------------------------------------------------------*/
-/* USER CODE BEGIN Includes */
-
-/* USER CODE END Includes */
-
-/* Exported types ------------------------------------------------------------*/
 /* USER CODE BEGIN ET */
 
-typedef struct {
+typedef struct music {
+    int note;
+    int size;
+    int tempo;
+    int space;
+    char end;
+} Music;
+
+typedef struct map_t
+{
     int horizontal[3][8];
     int vertical[2][16];
-} Map;
+} map_t;
 
-typedef struct music {
-	int note;
-	int size;
-	int tempo;
-	int space;
-	char end;
-} Music;
+
+// Maps
+extern map_t Player_Map;
+extern map_t Player2_Map;
+extern map_t P1_Hits;
+extern map_t P2_Hits;
+
+// Display
+extern char Game_Display[8];
+extern int  Display_Mode;
+extern int  Game_Stage_Mode;
+
+// Cursor
+extern char Cursor_On;
+extern int  Cursor_Digit;
+extern char Cursor_Segment;
+extern char Cursor_Visible;
+extern int  Cursor_Blink_Count;
+
+// Scrolling message used and defined in main.c
+extern char Animate_On;
+extern char Message_Length;
+extern char *Message_Pointer;
+extern char *Save_Pointer;
+extern int  Delay_msec;
+extern int  Delay_counter;
+
+// Audio/PWM used and defined in main.c
 extern char ramp;
 extern char RED_BRT;
 extern char GREEN_BRT;
@@ -57,42 +68,21 @@ extern char RED_STEP;
 extern char GREEN_STEP;
 extern char BLUE_STEP;
 extern char DIM_Enable;
-extern int TONE;
-extern int COUNT;
-extern int INDEX;
-extern Music Song[100];
-extern int Note;
-extern int Save_Note;
-extern int Vibrato_Depth;
-extern int Vibrato_Rate;
-extern int Vibrato_Count;
-extern char Animate_On;
 extern char Music_ON;
-extern char Message_Length;
-extern char *Save_Pointer;
-extern char *Message_Pointer;
-extern int Delay_msec;
-extern int Delay_counter;
+extern int  TONE;
+extern int  COUNT;
+extern int  INDEX;
+extern int  Note;
+extern int  Save_Note;
+extern int  Vibrato_Depth;
+extern int  Vibrato_Rate;
+extern int  Vibrato_Count;
+extern Music Song[100];
+
 /* USER CODE END ET */
 
-/* Exported constants --------------------------------------------------------*/
-/* USER CODE BEGIN EC */
-
-/* USER CODE END EC */
-
-/* Exported macro ------------------------------------------------------------*/
-/* USER CODE BEGIN EM */
-
-/* USER CODE END EM */
-
-/* Exported functions prototypes ---------------------------------------------*/
 void Error_Handler(void);
 
-/* USER CODE BEGIN EFP */
-
-/* USER CODE END EFP */
-
-/* Private defines -----------------------------------------------------------*/
 #define CS_I2C_SPI_Pin GPIO_PIN_3
 #define CS_I2C_SPI_GPIO_Port GPIOE
 #define PC14_OSC32_IN_Pin GPIO_PIN_14
@@ -159,10 +149,8 @@ void Error_Handler(void);
 #define Audio_SDA_GPIO_Port GPIOB
 #define MEMS_INT2_Pin GPIO_PIN_1
 #define MEMS_INT2_GPIO_Port GPIOE
-/* USER CODE BEGIN Private defines */
 
-/* music notes by name, 125Khz (250Khz/2) frequency will be divided by these constants for 1/2 period  *
- * note frequency = 125Khz / (NOTE * 2)                                                                */
+/* USER CODE BEGIN Private defines */
 
 #define C0 3823
 #define Cs0_Db0 3608
@@ -176,7 +164,6 @@ void Error_Handler(void);
 #define A0 2273
 #define As0_Bb0 2145
 #define B0 2025
-
 #define C1 1911
 #define Cs1_Db1 1803
 #define D1 1703
@@ -189,7 +176,6 @@ void Error_Handler(void);
 #define A1 1136
 #define As1_Bb1 1073
 #define B1 1012
-
 #define C2 956
 #define Cs2_Db2 902
 #define D2 851
@@ -202,7 +188,6 @@ void Error_Handler(void);
 #define A2 568
 #define As2_Bb2 536
 #define B2 506
-
 #define C3 478
 #define Cs3_Db3 451
 #define D3 426
@@ -215,7 +200,6 @@ void Error_Handler(void);
 #define A3 284
 #define As3_Bb3 268
 #define B3 253
-
 #define C4 239
 #define Cs4_Db4 225
 #define D4 213
@@ -228,7 +212,6 @@ void Error_Handler(void);
 #define A4 142
 #define As4_Bb4 134
 #define B4 127
-
 #define C5 119
 #define Cs5_Db5 113
 #define D5 106
@@ -241,7 +224,6 @@ void Error_Handler(void);
 #define A5 71
 #define As5_Bb5 67
 #define B5 63
-
 #define C6 60
 #define Cs6_Db6 56
 #define D6 53
@@ -255,14 +237,13 @@ void Error_Handler(void);
 #define As6_Bb6 34
 #define B6 32
 
-/* note size constants to divide tempo value to get note duration */
-#define whole 1
-#define half 2
+#define whole  1
+#define half   2
 #define quarter 4
-#define _8th 8
-#define _16th 16
-#define _32nd 32
-#define rest 0
+#define _8th   8
+#define _16th  16
+#define _32nd  32
+#define rest   0
 
 /* USER CODE END Private defines */
 
@@ -270,4 +251,4 @@ void Error_Handler(void);
 }
 #endif
 
-#endif /* __MAIN_H */
+#endif 
