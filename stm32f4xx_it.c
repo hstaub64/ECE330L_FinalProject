@@ -43,16 +43,15 @@
 /* Private variables ---------------------------------------------------------*/
 /* USER CODE BEGIN PV */
 
-map_t Player_Map  = {0};
+map_t Player_Map = {0};
 map_t Player2_Map = {0};
-map_t P1_Hits     = {0};
-map_t P2_Hits     = {0};
-
+map_t P1_Hits = {0};
+map_t P2_Hits = {0};
 
 // Pointer to whichever map SysTick should draw
 
-char Cursor_Visible    = 0;
-int  Cursor_Blink_Count = 0;
+char Cursor_Visible = 0;
+int Cursor_Blink_Count = 0;
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -193,119 +192,69 @@ void PendSV_Handler(void)
  * @brief This function handles System tick timer.
  */
 
-
 // Segment value constants map int values to display
-#define SEG_OFF   0   // empty
-#define SEG_DIM   1   // miss shown at 50% brightness via PWM
-#define SEG_HIT   2   // hit shown at 100% brightness
-#define SEG_BOAT  3   // placed boat in placement phase only
-
+#define SEG_OFF 0  // empty
+#define SEG_DIM 1  // miss shown at 50% brightness via PWM
+#define SEG_HIT 2  // hit shown at 100% brightness
+#define SEG_BOAT 3 // placed boat in placement phase only
 
 // PWM brightness threshold ramp counts 0-255 in TIM7
 // SEG_DIM turns off at halfway through the ramp cycle
 
 #define DIM_THRESHOLD 127
 
-int Game_Display[8];
-
-// layering boats, hits, and cursor
-void Composite_Display(struct map_t playerBoats, struct map_t playerHits)
+void Layered_Display(struct map_t boats, struct map_t hits)
 {
-    //for (int i = 0; i < 8; i++) Game_Display[i] = 0;
+  for (int i = 0; i < 8; i++)
+    Game_Display[i] = 0;
 
-    for (int i = 0; i < 8; i++)
-    {
-    						// Horizontal segments
-        // Top bit 0
-        {
-            int boat = playerBoats.horizontal[0][i]; // Save value at current i position for the top row of placed boats
-            int hit  = playerHits.horizontal[0][i]; // Save value at current i position for the top row on the hit map
-            // If boat is not null, save the value for blinking the light
-            // Else, if hit is not null, save the value for a miss
-            // else, save the value for keeping the lights off
-            int val  = boat ? SEG_BOAT : (hit ? SEG_DIM : SEG_OFF); 
-            if (boat && hit) val = SEG_HIT; // if boat is not null and hit is not null, save the value for a hit
-            if (val == SEG_BOAT || val == SEG_HIT)
-                Game_Display[i] |= (1 << 0); // if value is for placing boats or a hit, turn on the top seg of the 7 seg
-            else if (val == SEG_DIM && ramp < DIM_THRESHOLD)
-                Game_Display[i] |= (1 << 0); // if the value is for a miss and ramp is less than the dim threshold, turn on the top segment of 7 seg
-        }
-        // Middle bit 6
-        {
-            int boat = playerBoats.horizontal[1][i];
-            int hit  = playerHits.horizontal[1][i];
-            int val  = boat ? SEG_BOAT : (hit ? SEG_DIM : SEG_OFF);
-            if (boat && hit) val = SEG_HIT;
-            if (val == SEG_BOAT || val == SEG_HIT)
-                Game_Display[i] |= (1 << 6);
-            else if (val == SEG_DIM && ramp < DIM_THRESHOLD)
-                Game_Display[i] |= (1 << 6);
-        }
-        // Bottom (bit 3)
-        {
-            int boat = playerBoats.horizontal[2][i];
-            int hit  = playerHits.horizontal[2][i];
-            int val  = boat ? SEG_BOAT : (hit ? SEG_DIM : SEG_OFF);
-            if (boat && hit) val = SEG_HIT;
-            if (val == SEG_BOAT || val == SEG_HIT)
-                Game_Display[i] |= (1 << 3);
-            else if (val == SEG_DIM && ramp < DIM_THRESHOLD)
-                Game_Display[i] |= (1 << 3);
-        }
+  for (int i = 0; i < 8; i++)
+  {
+    if (boats.horizontal[0][i])
+      Game_Display[i] |= (1 << 0);
+    else if (hits.horizontal[0][i] && ramp < 127)
+      Game_Display[i] |= (1 << 0);
 
-        					// Vertical segments
+    if (boats.horizontal[1][i])
+      Game_Display[i] |= (1 << 6);
+    else if (hits.horizontal[1][i] && ramp < 127)
+      Game_Display[i] |= (1 << 6);
 
-        // Upper-left bit 5
-        {
-            int boat = playerBoats.vertical[0][i];
-            int hit  = playerHits.vertical[0][i];
-            if (boat || (hit == SEG_HIT))      Game_Display[i] |= (1 << 5);
-            else if (hit && ramp < DIM_THRESHOLD) Game_Display[i] |= (1 << 5);
-        }
-        // Lower-left bit 4
-        {
-            int boat = playerBoats.vertical[1][i];
-            int hit  = playerHits.vertical[1][i];
-            if (boat || (hit == SEG_HIT))         Game_Display[i] |= (1 << 4);
-            else if (hit && ramp < DIM_THRESHOLD)  Game_Display[i] |= (1 << 4);
-        }
-        // Upper-right bit 1
-        {
-            int boat = playerBoats.vertical[0][i + 8];
-            int hit  = playerHits.vertical[0][i + 8];
-            if (boat || (hit == SEG_HIT))         Game_Display[i] |= (1 << 1);
-            else if (hit && ramp < DIM_THRESHOLD)  Game_Display[i] |= (1 << 1);
-        }
-        // Lower-right bit 2
-        {
-            int boat = playerBoats.vertical[1][i + 8];
-            int hit  = playerHits.vertical[1][i + 8];
-            if (boat || (hit == SEG_HIT))         Game_Display[i] |= (1 << 2);
-            else if (hit && ramp < DIM_THRESHOLD)  Game_Display[i] |= (1 << 2);
-        }
-    }
+    if (boats.horizontal[2][i])
+      Game_Display[i] |= (1 << 3);
+    else if (hits.horizontal[2][i] && ramp < 127)
+      Game_Display[i] |= (1 << 3);
 
+    if (boats.vertical[0][i])
+      Game_Display[i] |= (1 << 5);
+    else if (hits.vertical[0][i] && ramp < 127)
+      Game_Display[i] |= (1 << 5);
 
+    if (boats.vertical[1][i])
+      Game_Display[i] |= (1 << 4);
+    else if (hits.vertical[1][i] && ramp < 127)
+      Game_Display[i] |= (1 << 4);
 
+    if (boats.vertical[0][i + 8])
+      Game_Display[i] |= (1 << 1);
+    else if (hits.vertical[0][i + 8] && ramp < 127)
+      Game_Display[i] |= (1 << 1);
 
+    if (boats.vertical[1][i + 8])
+      Game_Display[i] |= (1 << 2);
+    else if (hits.vertical[1][i + 8] && ramp < 127)
+      Game_Display[i] |= (1 << 2);
+  }
 
+  if (Cursor_On && Cursor_Visible)
+    Game_Display[Cursor_Digit] |= Cursor_Segment;
 
-    // Map Layer 3: cursor blink on top of everything
-    if (Cursor_On && Cursor_Visible)
-        Game_Display[Cursor_Digit] |= Cursor_Segment;
-
-    //  Write bitmasks to display on "map"
-    for (int i = 0; i < 8; i++)
-    {
-        GPIOE->ODR = (0xFF00 | (unsigned char)Game_Display[i]) & ~(1 << (i + 8));
-        GPIOE->ODR |= 0xFF00;
-    }
+  for (int i = 0; i < 8; i++)
+  {
+    GPIOE->ODR = (0xFF00 | (unsigned char)Game_Display[i]) & ~(1 << (i + 8));
+    GPIOE->ODR |= 0xFF00;
+  }
 }
-
-
-
-
-
 
 void SysTick_Handler(void)
 {
@@ -326,62 +275,50 @@ void SysTick_Handler(void)
     }
   }
 
-
-
-
-
   // when cursor is on blink
   if (Cursor_On > 0)
   {
-      // Blink toggle
-      Cursor_Blink_Count++;
-      if (Cursor_Blink_Count >= 500)
-      {
-          Cursor_Blink_Count = 0;
-          Cursor_Visible ^= 1;
-      }
+    // Blink toggle
+    Cursor_Blink_Count++;
+    if (Cursor_Blink_Count >= 500)
+    {
+      Cursor_Blink_Count = 0;
+      Cursor_Visible ^= 1;
+    }
 
-
-      Delay_counter++;
-      if (Delay_counter > Delay_msec)
-      {
-          Delay_counter = 0;
-          Composite_Display();
-      }
+    Delay_counter++;
+    if (Delay_counter > Delay_msec)
+    {
+      Delay_counter = 0;
+      Composite_Display();
+    }
   }
   else if (Animate_On > 0)
   {
-      // scrolling message — unchanged
-      Delay_counter++;
-      if (Delay_counter > Delay_msec)
-      {
-          Delay_counter = 0;
-          Seven_Segment_Digit(7, *(Message_Pointer),0);
-          Seven_Segment_Digit(6, *(Message_Pointer + 1), 0);
-          Seven_Segment_Digit(5, *(Message_Pointer + 2), 0);
-          Seven_Segment_Digit(4, *(Message_Pointer + 3), 0);
-          Seven_Segment_Digit(3, *(Message_Pointer + 4), 0);
-          Seven_Segment_Digit(2, *(Message_Pointer + 5), 0);
-          Seven_Segment_Digit(1, *(Message_Pointer + 6), 0);
-          Seven_Segment_Digit(0, *(Message_Pointer + 7), 0);
-          Message_Pointer++;
-          if ((Message_Pointer - Save_Pointer) >= (Message_Length - 8))
-              Message_Pointer = Save_Pointer;
-      }
+    // scrolling message — unchanged
+    Delay_counter++;
+    if (Delay_counter > Delay_msec)
+    {
+      Delay_counter = 0;
+      Seven_Segment_Digit(7, *(Message_Pointer), 0);
+      Seven_Segment_Digit(6, *(Message_Pointer + 1), 0);
+      Seven_Segment_Digit(5, *(Message_Pointer + 2), 0);
+      Seven_Segment_Digit(4, *(Message_Pointer + 3), 0);
+      Seven_Segment_Digit(3, *(Message_Pointer + 4), 0);
+      Seven_Segment_Digit(2, *(Message_Pointer + 5), 0);
+      Seven_Segment_Digit(1, *(Message_Pointer + 6), 0);
+      Seven_Segment_Digit(0, *(Message_Pointer + 7), 0);
+      Message_Pointer++;
+      if ((Message_Pointer - Save_Pointer) >= (Message_Length - 8))
+        Message_Pointer = Save_Pointer;
+    }
   }
-
-
-
-
-
 
   /* USER CODE END SysTick_IRQn 0 */
   HAL_IncTick();
   /* USER CODE BEGIN SysTick_IRQn 1 */
 
   /* USER CODE END SysTick_IRQn 1 */
-
-
 }
 
 /******************************************************************************/
