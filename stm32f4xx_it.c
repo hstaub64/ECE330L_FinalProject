@@ -51,10 +51,6 @@ map_t P2_Hits     = {0};
 
 // Pointer to whichever map SysTick should draw
 
-// main.c swaps this pointer each game phase
-map_t *Boat_Map = &Player_Map;
-map_t *Hit_Map = &P1_Hits;
-
 char Cursor_Visible    = 0;
 int  Cursor_Blink_Count = 0;
 /* USER CODE END PV */
@@ -210,18 +206,20 @@ void PendSV_Handler(void)
 
 #define DIM_THRESHOLD 127
 
+int Game_Display[8];
+
 // layering boats, hits, and cursor
-void Composite_Display(void)
+void Composite_Display(struct map_t playerBoats, struct map_t playerHits)
 {
-    for (int i = 0; i < 8; i++) Game_Display[i] = 0;
+    //for (int i = 0; i < 8; i++) Game_Display[i] = 0;
 
     for (int i = 0; i < 8; i++)
     {
     						// Horizontal segments
         // Top bit 0
         {
-            int boat = Boat_Map->horizontal[0][i]; // Save value at current i position for the top row of placed boats
-            int hit  = Hit_Map->horizontal[0][i]; // Save value at current i position for the top row on the hit map
+            int boat = playerBoats.horizontal[0][i]; // Save value at current i position for the top row of placed boats
+            int hit  = playerHits.horizontal[0][i]; // Save value at current i position for the top row on the hit map
             // If boat is not null, save the value for blinking the light
             // Else, if hit is not null, save the value for a miss
             // else, save the value for keeping the lights off
@@ -234,8 +232,8 @@ void Composite_Display(void)
         }
         // Middle bit 6
         {
-            int boat = Boat_Map->horizontal[1][i];
-            int hit  = Hit_Map->horizontal[1][i];
+            int boat = playerBoats.horizontal[1][i];
+            int hit  = playerHits.horizontal[1][i];
             int val  = boat ? SEG_BOAT : (hit ? SEG_DIM : SEG_OFF);
             if (boat && hit) val = SEG_HIT;
             if (val == SEG_BOAT || val == SEG_HIT)
@@ -245,8 +243,8 @@ void Composite_Display(void)
         }
         // Bottom (bit 3)
         {
-            int boat = Boat_Map->horizontal[2][i];
-            int hit  = Hit_Map->horizontal[2][i];
+            int boat = playerBoats.horizontal[2][i];
+            int hit  = playerHits.horizontal[2][i];
             int val  = boat ? SEG_BOAT : (hit ? SEG_DIM : SEG_OFF);
             if (boat && hit) val = SEG_HIT;
             if (val == SEG_BOAT || val == SEG_HIT)
@@ -259,29 +257,29 @@ void Composite_Display(void)
 
         // Upper-left bit 5
         {
-            int boat = Boat_Map->vertical[0][i];
-            int hit  = Hit_Map->vertical[0][i];
+            int boat = playerBoats.vertical[0][i];
+            int hit  = playerHits.vertical[0][i];
             if (boat || (hit == SEG_HIT))      Game_Display[i] |= (1 << 5);
             else if (hit && ramp < DIM_THRESHOLD) Game_Display[i] |= (1 << 5);
         }
         // Lower-left bit 4
         {
-            int boat = Boat_Map->vertical[1][i];
-            int hit  = Hit_Map->vertical[1][i];
+            int boat = playerBoats.vertical[1][i];
+            int hit  = playerHits.vertical[1][i];
             if (boat || (hit == SEG_HIT))         Game_Display[i] |= (1 << 4);
             else if (hit && ramp < DIM_THRESHOLD)  Game_Display[i] |= (1 << 4);
         }
         // Upper-right bit 1
         {
-            int boat = Boat_Map->vertical[0][i + 8];
-            int hit  = Hit_Map->vertical[0][i + 8];
+            int boat = playerBoats.vertical[0][i + 8];
+            int hit  = playerHits.vertical[0][i + 8];
             if (boat || (hit == SEG_HIT))         Game_Display[i] |= (1 << 1);
             else if (hit && ramp < DIM_THRESHOLD)  Game_Display[i] |= (1 << 1);
         }
         // Lower-right bit 2
         {
-            int boat = Boat_Map->vertical[1][i + 8];
-            int hit  = Hit_Map->vertical[1][i + 8];
+            int boat = playerBoats.vertical[1][i + 8];
+            int hit  = playerHits.vertical[1][i + 8];
             if (boat || (hit == SEG_HIT))         Game_Display[i] |= (1 << 2);
             else if (hit && ramp < DIM_THRESHOLD)  Game_Display[i] |= (1 << 2);
         }

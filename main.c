@@ -223,47 +223,47 @@ int main(void)
   int i;
 
   // block to check if map has enough segments placed
-  int count_map_segments(map_t * m)
+  int count_map_segments(struct map_t pMap)
   {
     int count = 0;
     for (int i = 0; i < 8; i++)
     {
-      if (m->horizontal[0][i])
+      if (pMap.horizontal[0][i])
         count++;
-      if (m->horizontal[1][i])
+      if (pMap.horizontal[1][i])
         count++;
-      if (m->horizontal[2][i])
+      if (pMap.horizontal[2][i])
         count++;
-      if (m->vertical[0][i])
+      if (pMap.vertical[0][i])
         count++;
-      if (m->vertical[1][i])
+      if (pMap.vertical[1][i])
         count++;
-      if (m->vertical[0][i + 8])
+      if (pMap.vertical[0][i + 8])
         count++;
-      if (m->vertical[1][i + 8])
+      if (pMap.vertical[1][i + 8])
         count++;
     }
     return count;
   }
 
   // block to check if all ships on boat_map are hit in hit_maps
-  int check_win(map_t * hit_map, map_t * boat_map)
+  int check_win(struct map_t hit_map, struct map_t boat_map)
   {
     for (int i = 0; i < 8; i++)
     {
-      if (boat_map->horizontal[0][i] && !hit_map->horizontal[0][i])
+      if (boat_map.horizontal[0][i] && !hit_map.horizontal[0][i])
         return 0;
-      if (boat_map->horizontal[1][i] && !hit_map->horizontal[1][i])
+      if (boat_map.horizontal[1][i] && !hit_map.horizontal[1][i])
         return 0;
-      if (boat_map->horizontal[2][i] && !hit_map->horizontal[2][i])
+      if (boat_map.horizontal[2][i] && !hit_map.horizontal[2][i])
         return 0;
-      if (boat_map->vertical[0][i] && !hit_map->vertical[0][i])
+      if (boat_map.vertical[0][i] && !hit_map.vertical[0][i])
         return 0;
-      if (boat_map->vertical[1][i] && !hit_map->vertical[1][i])
+      if (boat_map.vertical[1][i] && !hit_map.vertical[1][i])
         return 0;
-      if (boat_map->vertical[0][i + 8] && !hit_map->vertical[0][i + 8])
+      if (boat_map.vertical[0][i + 8] && !hit_map.vertical[0][i + 8])
         return 0;
-      if (boat_map->vertical[1][i + 8] && !hit_map->vertical[1][i + 8])
+      if (boat_map.vertical[1][i + 8] && !hit_map.vertical[1][i + 8])
         return 0;
     }
     return 1;
