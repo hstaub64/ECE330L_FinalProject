@@ -198,25 +198,27 @@ void PendSV_Handler(void)
  */
 
 
-// Segment value constants — map int values to display behaviour
+// Segment value constants map int values to display
 #define SEG_OFF   0   // empty
-#define SEG_DIM   1   // miss  — shown at 50% brightness via PWM
-#define SEG_HIT   2   // hit   — shown at 100% brightness
-#define SEG_BOAT  3   // placed boat (placement phase only)
+#define SEG_DIM   1   // miss shown at 50% brightness via PWM
+#define SEG_HIT   2   // hit shown at 100% brightness
+#define SEG_BOAT  3   // placed boat in placement phase only
 
-// PWM brightness threshold — ramp counts 0-255 in TIM7
+
+// PWM brightness threshold ramp counts 0-255 in TIM7
 // SEG_DIM turns off at halfway through the ramp cycle
+
 #define DIM_THRESHOLD 127
 
-// Builds Game_Display[] by layering boats, hits, and cursor
+// layering boats, hits, and cursor
 void Composite_Display(void)
 {
     for (int i = 0; i < 8; i++) Game_Display[i] = 0;
 
     for (int i = 0; i < 8; i++)
     {
-        // ── Horizontal segments ──────────────────────────────────────
-        // Top (bit 0)
+    						// Horizontal segments
+        // Top bit 0
         {
             int boat = Boat_Map->horizontal[0][i];
             int hit  = Hit_Map->horizontal[0][i];
@@ -227,7 +229,7 @@ void Composite_Display(void)
             else if (val == SEG_DIM && ramp < DIM_THRESHOLD)
                 Game_Display[i] |= (1 << 0);
         }
-        // Middle (bit 6)
+        // Middle bit 6
         {
             int boat = Boat_Map->horizontal[1][i];
             int hit  = Hit_Map->horizontal[1][i];
@@ -250,29 +252,30 @@ void Composite_Display(void)
                 Game_Display[i] |= (1 << 3);
         }
 
-        // ── Vertical segments ────────────────────────────────────────
-        // Upper-left (bit 5)
+        					// Vertical segments
+
+        // Upper-left bit 5
         {
             int boat = Boat_Map->vertical[0][i];
             int hit  = Hit_Map->vertical[0][i];
             if (boat || (hit == SEG_HIT))      Game_Display[i] |= (1 << 5);
             else if (hit && ramp < DIM_THRESHOLD) Game_Display[i] |= (1 << 5);
         }
-        // Lower-left (bit 4)
+        // Lower-left bit 4
         {
             int boat = Boat_Map->vertical[1][i];
             int hit  = Hit_Map->vertical[1][i];
             if (boat || (hit == SEG_HIT))         Game_Display[i] |= (1 << 4);
             else if (hit && ramp < DIM_THRESHOLD)  Game_Display[i] |= (1 << 4);
         }
-        // Upper-right (bit 1)
+        // Upper-right bit 1
         {
             int boat = Boat_Map->vertical[0][i + 8];
             int hit  = Hit_Map->vertical[0][i + 8];
             if (boat || (hit == SEG_HIT))         Game_Display[i] |= (1 << 1);
             else if (hit && ramp < DIM_THRESHOLD)  Game_Display[i] |= (1 << 1);
         }
-        // Lower-right (bit 2)
+        // Lower-right bit 2
         {
             int boat = Boat_Map->vertical[1][i + 8];
             int hit  = Hit_Map->vertical[1][i + 8];
@@ -281,11 +284,16 @@ void Composite_Display(void)
         }
     }
 
-    // ── Layer 3: cursor blink on top of everything ───────────────
+
+
+
+
+
+    // Map Layer 3: cursor blink on top of everything
     if (Cursor_On && Cursor_Visible)
         Game_Display[Cursor_Digit] |= Cursor_Segment;
 
-    // ── Write raw bitmasks to display ───────────────────────────
+    //  Write bitmasks to display on "map"
     for (int i = 0; i < 8; i++)
     {
         GPIOE->ODR = (0xFF00 | (unsigned char)Game_Display[i]) & ~(1 << (i + 8));
@@ -319,6 +327,8 @@ void SysTick_Handler(void)
 
 
 
+
+
   // when cursor is on blink
   if (Cursor_On > 0)
   {
@@ -330,12 +340,12 @@ void SysTick_Handler(void)
           Cursor_Visible ^= 1;
       }
 
-      // Composite and write display every Delay_msec ticks
+
       Delay_counter++;
       if (Delay_counter > Delay_msec)
       {
           Delay_counter = 0;
-          Composite_Display();   // replaces Draw_Board_From_Map + manual write
+          Composite_Display();
       }
   }
   else if (Animate_On > 0)
@@ -345,7 +355,7 @@ void SysTick_Handler(void)
       if (Delay_counter > Delay_msec)
       {
           Delay_counter = 0;
-          Seven_Segment_Digit(7, *(Message_Pointer),     0);
+          Seven_Segment_Digit(7, *(Message_Pointer),0);
           Seven_Segment_Digit(6, *(Message_Pointer + 1), 0);
           Seven_Segment_Digit(5, *(Message_Pointer + 2), 0);
           Seven_Segment_Digit(4, *(Message_Pointer + 3), 0);
@@ -358,6 +368,11 @@ void SysTick_Handler(void)
               Message_Pointer = Save_Pointer;
       }
   }
+
+
+
+
+
 
   /* USER CODE END SysTick_IRQn 0 */
   HAL_IncTick();
