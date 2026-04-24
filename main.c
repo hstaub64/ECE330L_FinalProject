@@ -269,6 +269,11 @@ int main(void)
     return 1;
   }
 
+  struct map_t player_one_boats;
+  struct map_t player_two_boats;
+  struct map_t player_one_hits;
+  struct map_t player_two_hits; 
+
   while (1)
   {
 
@@ -304,10 +309,6 @@ int main(void)
 
     case 1:
     {
-      // Set SysTick to draw P1's boat map (no hits yet)
-      Boat_Map = &Player_Map;
-      Hit_Map = &P1_Hits;
-
       Animate_On = 0;
       Cursor_On = 1;
       Delay_msec = 50;
@@ -320,10 +321,10 @@ int main(void)
 
       // PC10 = place a ship segment
       if (new_press & (1 << 10))
-        Place_Segment(&Player_Map, Cursor_Digit, Cursor_Segment);
+        Place_Segment(player_one_boats, Cursor_Digit, Cursor_Segment);
 
       // PC11 = done  require exactly 7 segments (3 single + 2 double)
-      if ((new_press & (1 << 11)) && Count_Segments(&Player_Map) >= 7)
+      if ((new_press & (1 << 11)) && count_map_segments(player_one_boats) >= 7)
       {
         Cursor_On = 0;
         phase = 0;
@@ -392,6 +393,7 @@ int main(void)
 
     default:
     {
+
       game = 0;
       break;
     }
