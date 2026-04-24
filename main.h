@@ -37,18 +37,22 @@ extern "C" {
 /* Exported types ------------------------------------------------------------*/
 /* USER CODE BEGIN ET */
 
-typedef struct {
-    int horizontal[3][8];
-    int vertical[2][16];
-} Map;
 
 typedef struct music {
-	int note;
-	int size;
-	int tempo;
-	int space;
-	char end;
+    int note;
+    int size;
+    int tempo;
+    int space;
+    char end;
 } Music;
+
+typedef struct map_s
+{
+    int horizontal[3][8];
+    int vertical[2][16];
+} map_t;
+
+extern map_t Player_Map;
 extern char ramp;
 extern char RED_BRT;
 extern char GREEN_BRT;
@@ -73,6 +77,17 @@ extern char *Save_Pointer;
 extern char *Message_Pointer;
 extern int Delay_msec;
 extern int Delay_counter;
+extern char Game_Display[8];
+extern char Cursor_On;
+extern int Cursor_Digit;
+extern char Cursor_Segment;
+extern char Cursor_Visible;
+extern int  Cursor_Blink_Count;
+extern map_t Player2_Map;
+extern map_t P1_Hits;
+extern map_t P2_Hits;
+extern map_t *Boat_Map;
+extern map_t *Hit_Map;
 /* USER CODE END ET */
 
 /* Exported constants --------------------------------------------------------*/
