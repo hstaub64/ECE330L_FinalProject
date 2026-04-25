@@ -8,6 +8,7 @@
 /* USER CODE END Header */
 
 #include "main.h"
+#include "stdio.h"
 #include "usb_host.h"
 #include "seg7.h"
 
@@ -24,6 +25,7 @@ void SystemClock_Config(void);
 static void MX_GPIO_Init(void);
 static void MX_TIM7_Init(void);
 void MX_USB_HOST_Process(void);
+void Layered_Display(void);
 
 /* USER CODE BEGIN 0 */
 
@@ -58,10 +60,13 @@ void message_display(char[]);
 /* Battle Ship Player 1 Place ships */
 char Message1[] =
     {SPACE, SPACE, SPACE, SPACE, SPACE, SPACE, SPACE, SPACE, SPACE, SPACE,
-     CHAR_B, CHAR_A, CHAR_T, CHAR_T, CHAR_L, CHAR_E, SPACE, CHAR_S, CHAR_H, CHAR_I, CHAR_P,
+     CHAR_B, CHAR_A, CHAR_T, CHAR_T, CHAR_L, CHAR_E, SPACE,
+     CHAR_S, CHAR_H, CHAR_I, CHAR_P,
      SPACE, SPACE, SPACE, SPACE, SPACE, SPACE, SPACE, SPACE, SPACE, SPACE,
      CHAR_P, CHAR_L, CHAR_A, CHAR_Y, CHAR_E, CHAR_R, CHAR_1, SPACE,
-     CHAR_P, CHAR_L, CHAR_A, CHAR_C, CHAR_E, SPACE, CHAR_S, CHAR_H, CHAR_I, CHAR_P, CHAR_S};
+     CHAR_P, CHAR_L, CHAR_A, CHAR_C, CHAR_E, SPACE,
+     CHAR_S, CHAR_H, CHAR_I, CHAR_P, CHAR_S,
+     SPACE, SPACE, SPACE, SPACE, SPACE, SPACE, SPACE, SPACE};  // <-- add these 8
 
 /* Player 2 Place Ships */
 char Message2[] =
@@ -137,6 +142,12 @@ int check_win(map_t hit_map, map_t boat_map)
     return 1;
 }
 
+
+
+
+
+
+
 /* USER CODE END 0 */
 
 int main(void)
@@ -152,6 +163,8 @@ int main(void)
   GPIOC->MODER |= 0x0;
   GPIOE->ODR    = 0xFFFF;
 
+  GPIOC->MODER &= ~((3 << 20) | (3 << 22));
+
   RCC->APB2ENR |= 1 << 8;
   ADC1->SMPR2  |= 1;
   ADC1->CR2    |= 1;
@@ -162,6 +175,8 @@ int main(void)
   TIM7->ARR   = 1;
   TIM7->DIER |= 1;
   TIM7->CR1  |= 1;
+
+
 
   int game = 0;
   int i;
@@ -203,27 +218,32 @@ int main(void)
     case 1: // P1 placing ships
     {
         Display_Mode = 0;
-        Animate_On = 0;
-        Cursor_On  = 1;
-        Delay_msec = 50;
+        Animate_On   = 0;
+        Cursor_On    = 1;
+        Delay_msec   = 50;
 
-        // PA1 which digit (0-7)
+        // Read potentiometers for cursor position
         ADC1->SQR3 = 1;
         ADC1->CR2 |= (1 << 30);
-        while (!(ADC1->SR & 2));
+        int timeout = 10000;
+        while (!(ADC1->SR & 2) && timeout-- > 0);
         Cursor_Digit = (ADC1->DR * 8) / 4096;
 
-        // PA2 which segment (0-6)
         ADC1->SQR3 = 2;
         ADC1->CR2 |= (1 << 30);
-        while (!(ADC1->SR & 2));
+        timeout = 10000;
+        while (!(ADC1->SR & 2) && timeout-- > 0);
         Cursor_Segment = seg_cycle[(ADC1->DR * 7) / 4096];
 
-        // PC10 = place ship segment
-        if (GPIOC->IDR & (1 << 10))
+        // Read buttons exactly like the lab example
+        int PC10 = !((GPIOC->IDR >> 10) & 1);  // SW6 = place ship
+        int PC11 = !((GPIOC->IDR >> 11) & 1);  // SW7 = done placing
+
+        if (PC10 == 1)
         {
-            int d = Cursor_Digit;
+            int d  = Cursor_Digit;
             char s = Cursor_Segment;
+
             if      (s == (1<<0)) Player_Map.horizontal[0][d]   = 1;
             else if (s == (1<<6)) Player_Map.horizontal[1][d]   = 1;
             else if (s == (1<<3)) Player_Map.horizontal[2][d]   = 1;
@@ -231,82 +251,86 @@ int main(void)
             else if (s == (1<<4)) Player_Map.vertical[1][d]     = 1;
             else if (s == (1<<1)) Player_Map.vertical[0][d + 8] = 1;
             else if (s == (1<<2)) Player_Map.vertical[1][d + 8] = 1;
-            HAL_Delay(300); // debounce
+
+            Layered_Display();
+            HAL_Delay(250);  // debounce, same as lab
+        }
+
+        if (PC11 == 1)
+        {
+            if (count_map_segments(Player_Map) >= 7)
+            {
+                Cursor_On = 0;
+                game = 2;
+            }
+            HAL_Delay(250);  // debounce
         }
 
         break;
     }
 
+
+
     case 2:
+    {
+        if (phase == 0)
         {
-            // ── Phase 0: show "Player 2 Place Ships" message once ──────────────
-            if (phase == 0)
-            	Display_Mode = 1; // tell SysTick to show Player2_Map
-            {
-                // scroll the P2 intro message before showing the board
-                Start_Message(Message2, sizeof(Message2) / sizeof(Message2[0]));
-                HAL_Delay(6000);    // wait for message to finish scrolling
-                Animate_On = 0;     // stop scrolling
-
-                // reset cursor to top-left of board
-                Cursor_Digit   = 0;
-                Cursor_Segment = (1<<0); // start on top segment
-
-                // turn cursor display on
-                Cursor_On  = 1;
-                Delay_msec = 50;
-
-                phase = 1; // move to input waiting phase
-            }
-
-            // ── Phase 1: wait for P2 to place ships ───────────────────────────
-            // PA1 pot → selects which digit (column 0-7)
-            ADC1->SQR3 = 1;
-            ADC1->CR2 |= (1 << 30);        // start ADC conversion
-            while (!(ADC1->SR & 2));        // wait for end of conversion flag
-            Cursor_Digit = (ADC1->DR * 8) / 4096;  // scale 0-4095 to 0-7
-
-            // PA2 pot → selects which segment within that digit
-            ADC1->SQR3 = 2;
-            ADC1->CR2 |= (1 << 30);
-            while (!(ADC1->SR & 2));
-            Cursor_Segment = seg_cycle[(ADC1->DR * 7) / 4096]; // scale to 0-6
-
-            // PC10 button → confirm and place a ship segment on P2's map
-            if (GPIOC->IDR & (1 << 10))
-            {
-                int d  = Cursor_Digit;   // current digit position
-                char s = Cursor_Segment; // current segment
-
-                // write segment into Player2_Map based on which segment is selected
-                if      (s == (1<<0)) Player2_Map.horizontal[0][d]   = 1; // top
-                else if (s == (1<<6)) Player2_Map.horizontal[1][d]   = 1; // middle
-                else if (s == (1<<3)) Player2_Map.horizontal[2][d]   = 1; // bottom
-                else if (s == (1<<5)) Player2_Map.vertical[0][d]     = 1; // upper-left
-                else if (s == (1<<4)) Player2_Map.vertical[1][d]     = 1; // lower-left
-                else if (s == (1<<1)) Player2_Map.vertical[0][d + 8] = 1; // upper-right
-                else if (s == (1<<2)) Player2_Map.vertical[1][d + 8] = 1; // lower-right
-
-                HAL_Delay(300); // simple button debounce — prevents double placement
-            }
-
-            // PC11 button → P2 is done placing ships
-            // require at least 7 segments placed before allowing advance
-            if (GPIOC->IDR & (1 << 11))
-            {
-                if (count_map_segments(Player2_Map) >= 7)
-                {
-                    // both players have placed ships — move to attack phase
-                    Cursor_On = 0;  // turn off cursor display
-                    phase = 0;      // reset phase for next state
-                    game  = 3;      // advance to P1 attack
-                    HAL_Delay(300); // debounce before transition
-                }
-            }
-
-            break;
+            Display_Mode = 1;
+            Start_Message(Message2, sizeof(Message2) / sizeof(Message2[0]));
+            HAL_Delay(6000);
+            Animate_On = 0;
+            Cursor_On  = 1;
+            Delay_msec = 50;
+            phase = 1;
         }
 
+        // Read potentiometers for cursor position
+        ADC1->SQR3 = 1;
+        ADC1->CR2 |= (1 << 30);
+        int timeout = 10000;
+        while (!(ADC1->SR & 2) && timeout-- > 0);
+        Cursor_Digit = (ADC1->DR * 8) / 4096;
+
+        ADC1->SQR3 = 2;
+        ADC1->CR2 |= (1 << 30);
+        timeout = 10000;
+        while (!(ADC1->SR & 2) && timeout-- > 0);
+        Cursor_Segment = seg_cycle[(ADC1->DR * 7) / 4096];
+
+        // Read buttons same as lab
+        int PC10 = !((GPIOC->IDR >> 10) & 1);
+        int PC11 = !((GPIOC->IDR >> 11) & 1);
+
+        if (PC10 == 1)
+        {
+            int d  = Cursor_Digit;
+            char s = Cursor_Segment;
+
+            if      (s == (1<<0)) Player2_Map.horizontal[0][d]   = 1;
+            else if (s == (1<<6)) Player2_Map.horizontal[1][d]   = 1;
+            else if (s == (1<<3)) Player2_Map.horizontal[2][d]   = 1;
+            else if (s == (1<<5)) Player2_Map.vertical[0][d]     = 1;
+            else if (s == (1<<4)) Player2_Map.vertical[1][d]     = 1;
+            else if (s == (1<<1)) Player2_Map.vertical[0][d + 8] = 1;
+            else if (s == (1<<2)) Player2_Map.vertical[1][d + 8] = 1;
+
+            Layered_Display();
+            HAL_Delay(250);
+        }
+
+        if (PC11 == 1)
+        {
+            if (count_map_segments(Player2_Map) >= 7)
+            {
+                Cursor_On = 0;
+                phase = 0;
+                game  = 3;
+            }
+            HAL_Delay(250);
+        }
+
+        break;
+    }
 
     case 3:
     {
@@ -417,10 +441,13 @@ static void MX_GPIO_Init(void)
   HAL_GPIO_Init(B1_GPIO_Port, &GPIO_InitStruct);
 
   // PC10 = place ship, PC11 = done
+
   GPIO_InitStruct.Pin  = GPIO_PIN_10 | GPIO_PIN_11;
   GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
-  GPIO_InitStruct.Pull = GPIO_PULLDOWN;
+  GPIO_InitStruct.Pull = GPIO_PULLUP;
   HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
+
+
 
   GPIO_InitStruct.Pin  = BOOT1_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
