@@ -32,6 +32,7 @@ int  Cursor_Digit   = 0;
 char Cursor_Segment = 0x01;
 char Cursor_Visible     = 0;
 int  Cursor_Blink_Count = 0;
+char Cursor_Segment2 = 0;  // second segment for double boat preview
 
 // FIX 2: Define Game_Display here
 char Game_Display[8] = {0,0,0,0,0,0,0,0};
@@ -146,10 +147,12 @@ void Layered_Display(void)
     {
         Add_Shots_To_Display(P2_Hits, Player_Map);
     }
-
     if (Cursor_On && Cursor_Visible)
+    {
         Game_Display[Cursor_Digit] |= Cursor_Segment;
-
+        if (Cursor_Segment2)
+            Game_Display[Cursor_Digit] |= Cursor_Segment2;  // same digit
+    }
     GPIOE->ODR = 0xFF00 | ((unsigned char)Game_Display[display_digit]);
     GPIOE->ODR &= ~(1 << (display_digit + 8));
 
@@ -180,6 +183,11 @@ void SysTick_Handler(void)
         Song[INDEX].note = Save_Note - Vibrato_Depth;
     }
   }
+
+
+
+
+
 
   // Cursor display and blink
   if (Cursor_On > 0)
