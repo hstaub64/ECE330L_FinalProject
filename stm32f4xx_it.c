@@ -35,6 +35,7 @@ int  Cursor_Blink_Count = 0;
 
 // FIX 2: Define Game_Display here
 char Game_Display[8] = {0,0,0,0,0,0,0,0};
+static int display_digit = 0;
 /* USER CODE END PV */
 
 
@@ -57,37 +58,51 @@ void PendSV_Handler(void)     {}
 #define SEG_HIT  2
 #define SEG_BOAT 3
 
-void Layered_Display(map_t boats, map_t hits)
+// Replace the function signature and internals:
+void Layered_Display(void)
 {
+    // pick which maps to show based on Display_Mode
+    map_t *boats;
+    map_t *hits;
+
+    if      (Display_Mode == 0) { boats = &Player_Map;  hits = &P1_Hits; }
+    else if (Display_Mode == 1) { boats = &Player2_Map; hits = &P2_Hits; }
+    else if (Display_Mode == 2) { boats = &Player2_Map; hits = &P1_Hits; }
+    else                        { boats = &Player_Map;  hits = &P2_Hits; }
+
     for (int i = 0; i < 8; i++) Game_Display[i] = 0;
 
     for (int i = 0; i < 8; i++)
     {
-        if (boats.horizontal[0][i])                   Game_Display[i] |= (1<<0);
-        else if (hits.horizontal[0][i] && ramp < 127) Game_Display[i] |= (1<<0);
+        // horizontal segments — boat full bright, miss dim (ramp < 127 = 50%)
+        if (boats->horizontal[0][i])                    Game_Display[i] |= (1<<0);
+        else if (hits->horizontal[0][i] && ramp < 127)  Game_Display[i] |= (1<<0);
 
-        if (boats.horizontal[1][i])                   Game_Display[i] |= (1<<6);
-        else if (hits.horizontal[1][i] && ramp < 127) Game_Display[i] |= (1<<6);
+        if (boats->horizontal[1][i])                    Game_Display[i] |= (1<<6);
+        else if (hits->horizontal[1][i] && ramp < 127)  Game_Display[i] |= (1<<6);
 
-        if (boats.horizontal[2][i])                   Game_Display[i] |= (1<<3);
-        else if (hits.horizontal[2][i] && ramp < 127) Game_Display[i] |= (1<<3);
+        if (boats->horizontal[2][i])                    Game_Display[i] |= (1<<3);
+        else if (hits->horizontal[2][i] && ramp < 127)  Game_Display[i] |= (1<<3);
 
-        if (boats.vertical[0][i])                     Game_Display[i] |= (1<<5);
-        else if (hits.vertical[0][i] && ramp < 127)   Game_Display[i] |= (1<<5);
+        // vertical segments
+        if (boats->vertical[0][i])                      Game_Display[i] |= (1<<5);
+        else if (hits->vertical[0][i] && ramp < 127)    Game_Display[i] |= (1<<5);
 
-        if (boats.vertical[1][i])                     Game_Display[i] |= (1<<4);
-        else if (hits.vertical[1][i] && ramp < 127)   Game_Display[i] |= (1<<4);
+        if (boats->vertical[1][i])                      Game_Display[i] |= (1<<4);
+        else if (hits->vertical[1][i] && ramp < 127)    Game_Display[i] |= (1<<4);
 
-        if (boats.vertical[0][i+8])                   Game_Display[i] |= (1<<1);
-        else if (hits.vertical[0][i+8] && ramp < 127) Game_Display[i] |= (1<<1);
+        if (boats->vertical[0][i+8])                    Game_Display[i] |= (1<<1);
+        else if (hits->vertical[0][i+8] && ramp < 127)  Game_Display[i] |= (1<<1);
 
-        if (boats.vertical[1][i+8])                   Game_Display[i] |= (1<<2);
-        else if (hits.vertical[1][i+8] && ramp < 127) Game_Display[i] |= (1<<2);
+        if (boats->vertical[1][i+8])                    Game_Display[i] |= (1<<2);
+        else if (hits->vertical[1][i+8] && ramp < 127)  Game_Display[i] |= (1<<2);
     }
 
+    // cursor blink on top of everything
     if (Cursor_On && Cursor_Visible)
         Game_Display[Cursor_Digit] |= Cursor_Segment;
 
+    // write raw bitmasks directly to display hardware
     for (int i = 0; i < 8; i++)
     {
         GPIOE->ODR = (0xFF00 | (unsigned char)Game_Display[i]) & ~(1 << (i + 8));
@@ -127,7 +142,7 @@ void SysTick_Handler(void)
       if (Delay_counter > Delay_msec)
       {
           Delay_counter = 0;
-          Layered_Display(Player_Map, P1_Hits);
+          Layered_Display();
       }
   }
   else if (Animate_On > 0)
