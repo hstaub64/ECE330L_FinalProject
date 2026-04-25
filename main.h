@@ -53,6 +53,7 @@ extern char *Save_Pointer;
 extern char Game_Display[8];
 extern int  Display_Mode;
 extern int  Game_Stage_Mode;
+extern char Cursor_Segment2;
 
 // Cursor
 extern char Cursor_On;
@@ -61,11 +62,13 @@ extern char Cursor_Segment;
 extern char Cursor_Visible;
 extern int  Cursor_Blink_Count;
 
+
 // Scrolling message used and defined in main.c
 extern char Animate_On;
 extern char Message_Length;
 extern int  Delay_msec;
 extern int  Delay_counter;
+
 
 // Audio/PWM used and defined in main.c
 extern char ramp;
@@ -274,3 +277,5 @@ void Error_Handler(void);
 #endif
 
 #endif
+
+
