@@ -26,11 +26,15 @@ typedef struct music {
     char end;
 } Music;
 
-typedef struct map_s
+typedef struct map_t
 {
     int horizontal[3][8];
     int vertical[2][16];
 } map_t;
+
+
+
+void Layered_Display(void);
 
 
 // Maps
@@ -38,6 +42,12 @@ extern map_t Player_Map;
 extern map_t Player2_Map;
 extern map_t P1_Hits;
 extern map_t P2_Hits;
+
+
+//message pointers
+extern char *Message_Pointer;
+extern char *Save_Pointer;
+
 
 // Display
 extern char Game_Display[8];
@@ -54,8 +64,6 @@ extern int  Cursor_Blink_Count;
 // Scrolling message used and defined in main.c
 extern char Animate_On;
 extern char Message_Length;
-extern char *Message_Pointer;
-extern char *Save_Pointer;
 extern int  Delay_msec;
 extern int  Delay_counter;
 
@@ -152,6 +160,17 @@ void Error_Handler(void);
 
 /* USER CODE BEGIN Private defines */
 
+
+
+// button defines
+#define BTN_PLACE_Pin GPIO_PIN_10
+#define BTN_PLACE_Port GPIOC
+
+#define BTN_DONE_Pin GPIO_PIN_11
+#define BTN_DONE_Port GPIOC
+
+
+/* USER CODE END Private defines */
 #define C0 3823
 #define Cs0_Db0 3608
 #define D0 3405
@@ -246,6 +265,9 @@ void Error_Handler(void);
 #define rest   0
 
 /* USER CODE END Private defines */
+
+
+
 
 #ifdef __cplusplus
 }
