@@ -35,6 +35,7 @@ int  Cursor_Blink_Count = 0;
 
 // FIX 2: Define Game_Display here
 char Game_Display[8] = {0,0,0,0,0,0,0,0};
+static int display_digit = 0;
 /* USER CODE END PV */
 
 
@@ -57,43 +58,110 @@ void PendSV_Handler(void)     {}
 #define SEG_HIT  2
 #define SEG_BOAT 3
 
-void Layered_Display(map_t boats, map_t hits)
-{
-    for (int i = 0; i < 8; i++) Game_Display[i] = 0;
 
+void Add_Boats_To_Display(map_t boats)
+{
     for (int i = 0; i < 8; i++)
     {
-        if (boats.horizontal[0][i])                   Game_Display[i] |= (1<<0);
-        else if (hits.horizontal[0][i] && ramp < 127) Game_Display[i] |= (1<<0);
+        if (boats.horizontal[0][i])     Game_Display[i] |= (1<<0);
+        if (boats.horizontal[1][i])     Game_Display[i] |= (1<<6);
+        if (boats.horizontal[2][i])     Game_Display[i] |= (1<<3);
 
-        if (boats.horizontal[1][i])                   Game_Display[i] |= (1<<6);
-        else if (hits.horizontal[1][i] && ramp < 127) Game_Display[i] |= (1<<6);
+        if (boats.vertical[0][i])       Game_Display[i] |= (1<<5);
+        if (boats.vertical[1][i])       Game_Display[i] |= (1<<4);
+        if (boats.vertical[0][i + 8])   Game_Display[i] |= (1<<1);
+        if (boats.vertical[1][i + 8])   Game_Display[i] |= (1<<2);
+    }
+}
 
-        if (boats.horizontal[2][i])                   Game_Display[i] |= (1<<3);
-        else if (hits.horizontal[2][i] && ramp < 127) Game_Display[i] |= (1<<3);
+void Add_Shots_To_Display(map_t shots, map_t boats)
+{
+    for (int i = 0; i < 8; i++)
+    {
+        if (shots.horizontal[0][i])
+        {
+            if (boats.horizontal[0][i] || ramp < 127)
+                Game_Display[i] |= (1<<0);
+        }
 
-        if (boats.vertical[0][i])                     Game_Display[i] |= (1<<5);
-        else if (hits.vertical[0][i] && ramp < 127)   Game_Display[i] |= (1<<5);
+        if (shots.horizontal[1][i])
+        {
+            if (boats.horizontal[1][i] || ramp < 127)
+                Game_Display[i] |= (1<<6);
+        }
 
-        if (boats.vertical[1][i])                     Game_Display[i] |= (1<<4);
-        else if (hits.vertical[1][i] && ramp < 127)   Game_Display[i] |= (1<<4);
+        if (shots.horizontal[2][i])
+        {
+            if (boats.horizontal[2][i] || ramp < 127)
+                Game_Display[i] |= (1<<3);
+        }
 
-        if (boats.vertical[0][i+8])                   Game_Display[i] |= (1<<1);
-        else if (hits.vertical[0][i+8] && ramp < 127) Game_Display[i] |= (1<<1);
+        if (shots.vertical[0][i])
+        {
+            if (boats.vertical[0][i] || ramp < 127)
+                Game_Display[i] |= (1<<5);
+        }
 
-        if (boats.vertical[1][i+8])                   Game_Display[i] |= (1<<2);
-        else if (hits.vertical[1][i+8] && ramp < 127) Game_Display[i] |= (1<<2);
+        if (shots.vertical[1][i])
+        {
+            if (boats.vertical[1][i] || ramp < 127)
+                Game_Display[i] |= (1<<4);
+        }
+
+        if (shots.vertical[0][i + 8])
+        {
+            if (boats.vertical[0][i + 8] || ramp < 127)
+                Game_Display[i] |= (1<<1);
+        }
+
+        if (shots.vertical[1][i + 8])
+        {
+            if (boats.vertical[1][i + 8] || ramp < 127)
+                Game_Display[i] |= (1<<2);
+        }
+    }
+}
+
+
+
+
+void Layered_Display(void)
+{
+    for (int i = 0; i < 8; i++)
+        Game_Display[i] = 0;
+
+    if (Display_Mode == 0)
+    {
+        Add_Boats_To_Display(Player_Map);
+    }
+    else if (Display_Mode == 1)
+    {
+        Add_Boats_To_Display(Player2_Map);
+    }
+    else if (Display_Mode == 2)
+    {
+        Add_Shots_To_Display(P1_Hits, Player2_Map);
+    }
+    else if (Display_Mode == 3)
+    {
+        Add_Shots_To_Display(P2_Hits, Player_Map);
     }
 
     if (Cursor_On && Cursor_Visible)
         Game_Display[Cursor_Digit] |= Cursor_Segment;
 
-    for (int i = 0; i < 8; i++)
-    {
-        GPIOE->ODR = (0xFF00 | (unsigned char)Game_Display[i]) & ~(1 << (i + 8));
-        GPIOE->ODR |= 0xFF00;
-    }
+    GPIOE->ODR = 0xFF00 | ((unsigned char)Game_Display[display_digit]);
+    GPIOE->ODR &= ~(1 << (display_digit + 8));
+
+    display_digit++;
+    if (display_digit >= 8)
+        display_digit = 0;
 }
+
+
+
+
+
 
 void SysTick_Handler(void)
 {
@@ -123,15 +191,7 @@ void SysTick_Handler(void)
           Cursor_Visible ^= 1;
       }
 
-      Delay_counter++;
-      if (Delay_counter > Delay_msec)
-      {
-          Delay_counter = 0;
-                      if (Display_Mode == 0)      Layered_Display(Player_Map,  P1_Hits);  // P1 placing
-                      else if (Display_Mode == 1) Layered_Display(Player2_Map, P2_Hits);  // P2 placing
-                      else if (Display_Mode == 2) Layered_Display(Player2_Map, P1_Hits);  // P1 shooting
-                      else if (Display_Mode == 3) Layered_Display(Player_Map,  P2_Hits);  // P2 shooting
-      }
+      Layered_Display();
   }
   else if (Animate_On > 0)
   {
@@ -139,6 +199,7 @@ void SysTick_Handler(void)
       if (Delay_counter > Delay_msec)
       {
           Delay_counter = 0;
+
           Seven_Segment_Digit(7, *(Message_Pointer),     0);
           Seven_Segment_Digit(6, *(Message_Pointer + 1), 0);
           Seven_Segment_Digit(5, *(Message_Pointer + 2), 0);
@@ -147,11 +208,15 @@ void SysTick_Handler(void)
           Seven_Segment_Digit(2, *(Message_Pointer + 5), 0);
           Seven_Segment_Digit(1, *(Message_Pointer + 6), 0);
           Seven_Segment_Digit(0, *(Message_Pointer + 7), 0);
+
           Message_Pointer++;
+
           if ((Message_Pointer - Save_Pointer) >= (Message_Length - 8))
               Message_Pointer = Save_Pointer;
       }
   }
+
+
 
   /* USER CODE END SysTick_IRQn 0 */
   HAL_IncTick();
