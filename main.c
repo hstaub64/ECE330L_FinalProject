@@ -143,8 +143,15 @@ int check_win(map_t hit_map, map_t boat_map)
 }
 
 
+int P1_singles = 0;
+int P1_doubles = 0;
+int P2_singles = 0;
+int P2_doubles = 0;
+int double_started = 0;  // tracks if first segment of double boat is placed
 
-
+// Horizontal/vertical segment sets
+static char seg_horizontal[] = { (1<<0), (1<<6), (1<<3) };          // top, mid, bot
+static char seg_vertical[]   = { (1<<5), (1<<4), (1<<1), (1<<2) };  // UL, LL, UR, LR
 
 
 
@@ -164,6 +171,8 @@ int main(void)
   GPIOE->ODR    = 0xFFFF;
 
   GPIOC->MODER &= ~((3 << 20) | (3 << 22));
+
+  GPIOC->MODER &= ~(3 << 16);
 
   RCC->APB2ENR |= 1 << 8;
   ADC1->SMPR2  |= 1;
@@ -215,55 +224,125 @@ int main(void)
 
 
 
-    case 1: // P1 placing ships
+
+
+
+    case 1: // P1 placing ships - DOUBLES FIRST then singles
     {
         Display_Mode = 0;
         Animate_On   = 0;
         Cursor_On    = 1;
         Delay_msec   = 50;
 
-        // Read potentiometers for cursor position
+
+        int seg_mode = ((GPIOC->IDR >> 0) & 1);
+
+        // PA1 -> which 7seg digit (0-6 for doubles, 0-7 for singles)
         ADC1->SQR3 = 1;
         ADC1->CR2 |= (1 << 30);
         int timeout = 10000;
         while (!(ADC1->SR & 2) && timeout-- > 0);
-        Cursor_Digit = (ADC1->DR * 8) / 4096;
 
+        if (P1_doubles < 2)
+            Cursor_Digit = (ADC1->DR * 7) / 4096;
+        else
+            Cursor_Digit = (ADC1->DR * 8) / 4096;
+
+        // PA2 -> which segment pair or single, based on SW8
         ADC1->SQR3 = 2;
         ADC1->CR2 |= (1 << 30);
         timeout = 10000;
         while (!(ADC1->SR & 2) && timeout-- > 0);
-        Cursor_Segment = seg_cycle[(ADC1->DR * 7) / 4096];
+        int pair = (ADC1->DR * 2) / 4096;  // 0 or 1
 
-        // Read buttons exactly like the lab example
-        int PC10 = !((GPIOC->IDR >> 10) & 1);  // SW6 = place ship
-        int PC11 = !((GPIOC->IDR >> 11) & 1);  // SW7 = done placing
+        if (P1_doubles < 2)
+        {
+            // doubles always vertical pairs only
+            if (pair == 0) { Cursor_Segment = (1<<5); Cursor_Segment2 = (1<<4); }  // f + e
+            else           { Cursor_Segment = (1<<1); Cursor_Segment2 = (1<<2); }  // b + c
+        }
+        else
+        {
+            // single mode: full segment selection
+            if (seg_mode == 0)
+                Cursor_Segment = seg_horizontal[(ADC1->DR * 3) / 4096];
+            else
+                Cursor_Segment = seg_vertical[(ADC1->DR * 4) / 4096];
+            Cursor_Segment2 = 0;
+        }
+
+        // Read buttons
+        int PC10 = !((GPIOC->IDR >> 10) & 1);  // SW6 = place
+        int PC11 = !((GPIOC->IDR >> 11) & 1);  // SW7 = done
 
         if (PC10 == 1)
         {
-            int d  = Cursor_Digit;
-            char s = Cursor_Segment;
+            int d   = Cursor_Digit;
+            char s  = Cursor_Segment;
+            char s2 = Cursor_Segment2;
 
-            if      (s == (1<<0)) Player_Map.horizontal[0][d]   = 1;
-            else if (s == (1<<6)) Player_Map.horizontal[1][d]   = 1;
-            else if (s == (1<<3)) Player_Map.horizontal[2][d]   = 1;
-            else if (s == (1<<5)) Player_Map.vertical[0][d]     = 1;
-            else if (s == (1<<4)) Player_Map.vertical[1][d]     = 1;
-            else if (s == (1<<1)) Player_Map.vertical[0][d + 8] = 1;
-            else if (s == (1<<2)) Player_Map.vertical[1][d + 8] = 1;
+            if (P1_doubles < 2)
+            {
+                // DOUBLES FIRST - both segments on same digit
+                if      (s  == (1<<0)) Player_Map.horizontal[0][d] = 1;
+                else if (s  == (1<<6)) Player_Map.horizontal[1][d] = 1;
+                else if (s  == (1<<3)) Player_Map.horizontal[2][d] = 1;
+                else if (s  == (1<<5)) Player_Map.vertical[0][d]   = 1;
+                else if (s  == (1<<4)) Player_Map.vertical[1][d]   = 1;
+                else if (s  == (1<<1)) Player_Map.vertical[0][d+8] = 1;
+                else if (s  == (1<<2)) Player_Map.vertical[1][d+8] = 1;
 
-            Layered_Display();
-            HAL_Delay(250);  // debounce, same as lab
+                if      (s2 == (1<<0)) Player_Map.horizontal[0][d] = 1;
+                else if (s2 == (1<<6)) Player_Map.horizontal[1][d] = 1;
+                else if (s2 == (1<<3)) Player_Map.horizontal[2][d] = 1;
+                else if (s2 == (1<<5)) Player_Map.vertical[0][d]   = 1;
+                else if (s2 == (1<<4)) Player_Map.vertical[1][d]   = 1;
+                else if (s2 == (1<<1)) Player_Map.vertical[0][d+8] = 1;
+                else if (s2 == (1<<2)) Player_Map.vertical[1][d+8] = 1;
+
+                P1_doubles++;
+                Cursor_Segment2 = 0;
+                Layered_Display();
+            }
+            else if (P1_singles < 3)
+            {
+                // SINGLES SECOND - check overlap
+                int occupied = 0;
+                if      (s == (1<<0)) occupied = Player_Map.horizontal[0][d];
+                else if (s == (1<<6)) occupied = Player_Map.horizontal[1][d];
+                else if (s == (1<<3)) occupied = Player_Map.horizontal[2][d];
+                else if (s == (1<<5)) occupied = Player_Map.vertical[0][d];
+                else if (s == (1<<4)) occupied = Player_Map.vertical[1][d];
+                else if (s == (1<<1)) occupied = Player_Map.vertical[0][d+8];
+                else if (s == (1<<2)) occupied = Player_Map.vertical[1][d+8];
+
+                if (!occupied)
+                {
+                    if      (s == (1<<0)) Player_Map.horizontal[0][d] = 1;
+                    else if (s == (1<<6)) Player_Map.horizontal[1][d] = 1;
+                    else if (s == (1<<3)) Player_Map.horizontal[2][d] = 1;
+                    else if (s == (1<<5)) Player_Map.vertical[0][d]   = 1;
+                    else if (s == (1<<4)) Player_Map.vertical[1][d]   = 1;
+                    else if (s == (1<<1)) Player_Map.vertical[0][d+8] = 1;
+                    else if (s == (1<<2)) Player_Map.vertical[1][d+8] = 1;
+                    P1_singles++;
+                    Layered_Display();
+                }
+            }
+
+
+            HAL_Delay(250);
         }
 
         if (PC11 == 1)
         {
-            if (count_map_segments(Player_Map) >= 7)
+            if (P1_doubles >= 2 && P1_singles >= 3)
             {
-                Cursor_On = 0;
+                Cursor_On       = 0;
+                Cursor_Segment2 = 0;
                 game = 2;
             }
-            HAL_Delay(250);  // debounce
+            HAL_Delay(250);
         }
 
         break;
@@ -271,58 +350,132 @@ int main(void)
 
 
 
-    case 2:
+
+
+
+    case 2: // P2 placing ships - DOUBLES FIRST then singles
     {
         if (phase == 0)
         {
-            Display_Mode = 1;
+            Display_Mode    = 1;
             Start_Message(Message2, sizeof(Message2) / sizeof(Message2[0]));
             HAL_Delay(6000);
-            Animate_On = 0;
-            Cursor_On  = 1;
-            Delay_msec = 50;
+            Animate_On      = 0;
+            Cursor_On       = 1;
+            Cursor_Segment2 = 0;
+            Delay_msec      = 50;
             phase = 1;
         }
 
-        // Read potentiometers for cursor position
+
+
+        int seg_mode = ((GPIOC->IDR >> 0) & 1);
+
+        // PA1 -> digit (0-6 for doubles, 0-7 for singles)
         ADC1->SQR3 = 1;
         ADC1->CR2 |= (1 << 30);
         int timeout = 10000;
         while (!(ADC1->SR & 2) && timeout-- > 0);
-        Cursor_Digit = (ADC1->DR * 8) / 4096;
 
+        if (P2_doubles < 2)
+            Cursor_Digit = (ADC1->DR * 7) / 4096;
+        else
+            Cursor_Digit = (ADC1->DR * 8) / 4096;
+
+        // PA2 -> segment pair or single based on SW8
         ADC1->SQR3 = 2;
         ADC1->CR2 |= (1 << 30);
         timeout = 10000;
         while (!(ADC1->SR & 2) && timeout-- > 0);
-        Cursor_Segment = seg_cycle[(ADC1->DR * 7) / 4096];
+        int pair = (ADC1->DR * 2) / 4096;
 
-        // Read buttons same as lab
+        if (P2_doubles < 2)
+        {
+            // doubles always vertical pairs only
+            if (pair == 0) { Cursor_Segment = (1<<5); Cursor_Segment2 = (1<<4); }  // f + e
+            else           { Cursor_Segment = (1<<1); Cursor_Segment2 = (1<<2); }  // b + c
+        }
+
+        else
+        {
+            // single mode: full segment selection
+            if (seg_mode == 0)
+                Cursor_Segment = seg_horizontal[(ADC1->DR * 3) / 4096];
+            else
+                Cursor_Segment = seg_vertical[(ADC1->DR * 4) / 4096];
+            Cursor_Segment2 = 0;
+        }
+
+        // Read buttons
         int PC10 = !((GPIOC->IDR >> 10) & 1);
         int PC11 = !((GPIOC->IDR >> 11) & 1);
 
         if (PC10 == 1)
         {
-            int d  = Cursor_Digit;
-            char s = Cursor_Segment;
+            int d   = Cursor_Digit;
+            char s  = Cursor_Segment;
+            char s2 = Cursor_Segment2;
 
-            if      (s == (1<<0)) Player2_Map.horizontal[0][d]   = 1;
-            else if (s == (1<<6)) Player2_Map.horizontal[1][d]   = 1;
-            else if (s == (1<<3)) Player2_Map.horizontal[2][d]   = 1;
-            else if (s == (1<<5)) Player2_Map.vertical[0][d]     = 1;
-            else if (s == (1<<4)) Player2_Map.vertical[1][d]     = 1;
-            else if (s == (1<<1)) Player2_Map.vertical[0][d + 8] = 1;
-            else if (s == (1<<2)) Player2_Map.vertical[1][d + 8] = 1;
+            if (P2_doubles < 2)
+            {
+                // DOUBLES FIRST - both segments on same digit
+                if      (s  == (1<<0)) Player2_Map.horizontal[0][d] = 1;
+                else if (s  == (1<<6)) Player2_Map.horizontal[1][d] = 1;
+                else if (s  == (1<<3)) Player2_Map.horizontal[2][d] = 1;
+                else if (s  == (1<<5)) Player2_Map.vertical[0][d]   = 1;
+                else if (s  == (1<<4)) Player2_Map.vertical[1][d]   = 1;
+                else if (s  == (1<<1)) Player2_Map.vertical[0][d+8] = 1;
+                else if (s  == (1<<2)) Player2_Map.vertical[1][d+8] = 1;
 
-            Layered_Display();
+                if      (s2 == (1<<0)) Player2_Map.horizontal[0][d] = 1;
+                else if (s2 == (1<<6)) Player2_Map.horizontal[1][d] = 1;
+                else if (s2 == (1<<3)) Player2_Map.horizontal[2][d] = 1;
+                else if (s2 == (1<<5)) Player2_Map.vertical[0][d]   = 1;
+                else if (s2 == (1<<4)) Player2_Map.vertical[1][d]   = 1;
+                else if (s2 == (1<<1)) Player2_Map.vertical[0][d+8] = 1;
+                else if (s2 == (1<<2)) Player2_Map.vertical[1][d+8] = 1;
+
+                P2_doubles++;
+                Cursor_Segment2 = 0;
+                Layered_Display();
+            }
+            else if (P2_singles < 3)
+            {
+                // SINGLES SECOND - check overlap
+                int occupied = 0;
+                if      (s == (1<<0)) occupied = Player2_Map.horizontal[0][d];
+                else if (s == (1<<6)) occupied = Player2_Map.horizontal[1][d];
+                else if (s == (1<<3)) occupied = Player2_Map.horizontal[2][d];
+                else if (s == (1<<5)) occupied = Player2_Map.vertical[0][d];
+                else if (s == (1<<4)) occupied = Player2_Map.vertical[1][d];
+                else if (s == (1<<1)) occupied = Player2_Map.vertical[0][d+8];
+                else if (s == (1<<2)) occupied = Player2_Map.vertical[1][d+8];
+
+
+                if (!occupied)
+                {
+                    if      (s == (1<<0)) Player2_Map.horizontal[0][d] = 1;
+                    else if (s == (1<<6)) Player2_Map.horizontal[1][d] = 1;
+                    else if (s == (1<<3)) Player2_Map.horizontal[2][d] = 1;
+                    else if (s == (1<<5)) Player2_Map.vertical[0][d]   = 1;
+                    else if (s == (1<<4)) Player2_Map.vertical[1][d]   = 1;
+                    else if (s == (1<<1)) Player2_Map.vertical[0][d+8] = 1;
+                    else if (s == (1<<2)) Player2_Map.vertical[1][d+8] = 1;
+                    P2_singles++;
+                    Layered_Display();
+                }
+            }
+
+            GPIOD->ODR = (P2_doubles << 4) | P2_singles;  // debug LEDs
             HAL_Delay(250);
         }
 
         if (PC11 == 1)
         {
-            if (count_map_segments(Player2_Map) >= 7)
+            if (P2_doubles >= 2 && P2_singles >= 3)
             {
-                Cursor_On = 0;
+                Cursor_On       = 0;
+                Cursor_Segment2 = 0;
                 phase = 0;
                 game  = 3;
             }
@@ -332,24 +485,206 @@ int main(void)
         break;
     }
 
-    case 3:
+
+
+
+    case 3: // P1 attack message
     {
-      Start_Message(Message3, sizeof(Message3) / sizeof(Message3[0]));
-      game = 4;
-      break;
+        Display_Mode = 2;  // show P2's board with P1's shots
+        Start_Message(Message3, sizeof(Message3) / sizeof(Message3[0]));
+        HAL_Delay(6000);
+        Animate_On  = 0;
+        Cursor_On   = 1;
+        Cursor_Digit   = 0;
+        Cursor_Segment = (1<<0);
+        Cursor_Segment2 = 0;
+        Delay_msec  = 50;
+        game = 4;
+        break;
     }
 
-    case 4:
+    case 4: // P1 shooting at P2's map
     {
-      Start_Message(Message4, sizeof(Message4) / sizeof(Message4[0]));
-      game = 5;
-      break;
+        Display_Mode = 2;
+        Cursor_On    = 1;
+        Animate_On   = 0;
+        Delay_msec   = 50;
+
+        // SW1 (PC0): 0 = horizontal, 1 = vertical
+        int seg_mode = ((GPIOC->IDR >> 0) & 1);
+
+        // PA1 -> digit
+        ADC1->SQR3 = 1;
+        ADC1->CR2 |= (1 << 30);
+        int timeout = 10000;
+        while (!(ADC1->SR & 2) && timeout-- > 0);
+        Cursor_Digit = (ADC1->DR * 8) / 4096;
+
+        // PA2 -> segment based on SW1
+        ADC1->SQR3 = 2;
+        ADC1->CR2 |= (1 << 30);
+        timeout = 10000;
+        while (!(ADC1->SR & 2) && timeout-- > 0);
+
+        if (seg_mode == 0)
+            Cursor_Segment = seg_horizontal[(ADC1->DR * 3) / 4096];
+        else
+            Cursor_Segment = seg_vertical[(ADC1->DR * 4) / 4096];
+
+        Cursor_Segment2 = 0;
+
+        // Read buttons
+        int PC10 = !((GPIOC->IDR >> 10) & 1);  // SW6 = fire shot
+
+        if (PC10 == 1)
+        {
+            int d  = Cursor_Digit;
+            char s = Cursor_Segment;
+
+            // record shot in P1_Hits map
+            if      (s == (1<<0)) P1_Hits.horizontal[0][d] = 1;
+            else if (s == (1<<6)) P1_Hits.horizontal[1][d] = 1;
+            else if (s == (1<<3)) P1_Hits.horizontal[2][d] = 1;
+            else if (s == (1<<5)) P1_Hits.vertical[0][d]   = 1;
+            else if (s == (1<<4)) P1_Hits.vertical[1][d]   = 1;
+            else if (s == (1<<1)) P1_Hits.vertical[0][d+8] = 1;
+            else if (s == (1<<2)) P1_Hits.vertical[1][d+8] = 1;
+
+            Layered_Display();
+            HAL_Delay(500);  // pause so player can see result
+
+            // check if P1 wins
+            if (check_win(P1_Hits, Player2_Map))
+            {
+                game = 7;  // P1 wins
+            }
+            else
+            {
+                game = 5;  // P2's turn
+            }
+        }
+
+        break;
     }
 
-    case 5:
+    case 5: // P2 attack message
     {
-      break;
+        Display_Mode = 3;  // show P1's board with P2's shots
+        Start_Message(Message4, sizeof(Message4) / sizeof(Message4[0]));
+        HAL_Delay(6000);
+        Animate_On  = 0;
+        Cursor_On   = 1;
+        Cursor_Digit   = 0;
+        Cursor_Segment = (1<<0);
+        Cursor_Segment2 = 0;
+        Delay_msec  = 50;
+        game = 6;
+        break;
     }
+
+    case 6: // P2 shooting at P1's map
+    {
+        Display_Mode = 3;
+        Cursor_On    = 1;
+        Animate_On   = 0;
+        Delay_msec   = 50;
+
+        // SW1 (PC0): 0 = horizontal, 1 = vertical
+        int seg_mode = ((GPIOC->IDR >> 0) & 1);
+
+        // PA1 -> digit
+        ADC1->SQR3 = 1;
+        ADC1->CR2 |= (1 << 30);
+        int timeout = 10000;
+        while (!(ADC1->SR & 2) && timeout-- > 0);
+        Cursor_Digit = (ADC1->DR * 8) / 4096;
+
+        // PA2 -> segment based on SW1
+        ADC1->SQR3 = 2;
+        ADC1->CR2 |= (1 << 30);
+        timeout = 10000;
+        while (!(ADC1->SR & 2) && timeout-- > 0);
+
+        if (seg_mode == 0)
+            Cursor_Segment = seg_horizontal[(ADC1->DR * 3) / 4096];
+        else
+            Cursor_Segment = seg_vertical[(ADC1->DR * 4) / 4096];
+
+        Cursor_Segment2 = 0;
+
+        // Read buttons
+        int PC10 = !((GPIOC->IDR >> 10) & 1);  // SW6 = fire shot
+
+        if (PC10 == 1)
+        {
+            int d  = Cursor_Digit;
+            char s = Cursor_Segment;
+
+            // record shot in P2_Hits map
+            if      (s == (1<<0)) P2_Hits.horizontal[0][d] = 1;
+            else if (s == (1<<6)) P2_Hits.horizontal[1][d] = 1;
+            else if (s == (1<<3)) P2_Hits.horizontal[2][d] = 1;
+            else if (s == (1<<5)) P2_Hits.vertical[0][d]   = 1;
+            else if (s == (1<<4)) P2_Hits.vertical[1][d]   = 1;
+            else if (s == (1<<1)) P2_Hits.vertical[0][d+8] = 1;
+            else if (s == (1<<2)) P2_Hits.vertical[1][d+8] = 1;
+
+            Layered_Display();
+            HAL_Delay(500);  // pause so player can see result
+
+            // check if P2 wins
+            if (check_win(P2_Hits, Player_Map))
+            {
+                game = 7;  // P2 wins
+            }
+            else
+            {
+                game = 3;  // P1's turn again
+            }
+        }
+
+        break;
+    }
+
+    case 7: // win screen
+    {
+        Cursor_On   = 0;
+        Animate_On  = 0;
+
+        // figure out who won and show message
+        if (check_win(P1_Hits, Player2_Map))
+        {
+            // P1 wins - scroll "PLAYER 1 WINS"
+            Seven_Segment_Digit(7, CHAR_P, 0);
+            Seven_Segment_Digit(6, CHAR_L, 0);
+            Seven_Segment_Digit(5, CHAR_A, 0);
+            Seven_Segment_Digit(4, CHAR_Y, 0);
+            Seven_Segment_Digit(3, CHAR_E, 0);
+            Seven_Segment_Digit(2, CHAR_R, 0);
+            Seven_Segment_Digit(1, CHAR_1, 0);
+            Seven_Segment_Digit(0, SPACE,  0);
+        }
+        else
+        {
+            // P2 wins
+            Seven_Segment_Digit(7, CHAR_P, 0);
+            Seven_Segment_Digit(6, CHAR_L, 0);
+            Seven_Segment_Digit(5, CHAR_A, 0);
+            Seven_Segment_Digit(4, CHAR_Y, 0);
+            Seven_Segment_Digit(3, CHAR_E, 0);
+            Seven_Segment_Digit(2, CHAR_R, 0);
+            Seven_Segment_Digit(1, CHAR_2, 0);
+            Seven_Segment_Digit(0, SPACE,  0);
+        }
+
+        // stay here forever until reset
+        break;
+    }
+
+
+
+
+
 
     default:
     {
