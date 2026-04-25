@@ -26,7 +26,7 @@ typedef struct music {
     char end;
 } Music;
 
-typedef struct map_s
+typedef struct map_t
 {
     int horizontal[3][8];
     int vertical[2][16];
@@ -251,4 +251,7 @@ void Error_Handler(void);
 }
 #endif
 
-#endif 
+#endif
+
+
+
