@@ -1,397 +1,224 @@
 /* USER CODE BEGIN Header */
 /**
  ******************************************************************************
- * @file           : main.c  LAB6
- * @brief          : Main program body
+ * @file    stm32f4xx_it.c
+ * @brief   Interrupt Service Routines.
  ******************************************************************************
  */
+
+
+
+
 /* USER CODE END Header */
 
 #include "main.h"
-#include "usb_host.h"
+#include "stm32f4xx_it.h"
 #include "seg7.h"
 
-I2C_HandleTypeDef hi2c1;
-I2S_HandleTypeDef hi2s3;
-SPI_HandleTypeDef hspi1;
-TIM_HandleTypeDef htim7;
+
 
 /* USER CODE BEGIN PV */
-int DelayValue = 50;
+map_t Player_Map  = {0};
+map_t Player2_Map = {0};
+map_t P1_Hits     = {0};
+map_t P2_Hits     = {0};
+
+int  Display_Mode    = 0;
+int  Game_Stage_Mode = 0;
+
+// FIX 1: Define Cursor variables here
+char Cursor_On      = 0;
+int  Cursor_Digit   = 0;
+char Cursor_Segment = 0x01;
+char Cursor_Visible     = 0;
+int  Cursor_Blink_Count = 0;
+
+// FIX 2: Define Game_Display here
+char Game_Display[8] = {0,0,0,0,0,0,0,0};
+static int display_digit = 0;
 /* USER CODE END PV */
 
-void SystemClock_Config(void);
-static void MX_GPIO_Init(void);
-static void MX_TIM7_Init(void);
-void MX_USB_HOST_Process(void);
 
-/* USER CODE BEGIN 0 */
 
-char ramp = 0;
-char RED_BRT = 0;
-char GREEN_BRT = 0;
-char BLUE_BRT = 0;
-char RED_STEP = 1;
-char GREEN_STEP = 2;
-char BLUE_STEP = 3;
-char DIM_Enable = 0;
-char Music_ON = 0;
-int TONE = 0;
-int COUNT = 0;
-int INDEX = 0;
-int Note = 0;
-int Save_Note = 0;
-int Vibrato_Depth = 1;
-int Vibrato_Rate = 40;
-int Vibrato_Count = 0;
-char Animate_On = 0;
-char Message_Length = 0;
-char *Message_Pointer;
-char *Save_Pointer;
-int Delay_msec = 0;
-int Delay_counter = 0;
-int CRC_Tx = 0xaaddf4d0;
-int CRC_Rx = 0;
 
-void message_display(char[]);
+extern HCD_HandleTypeDef hhcd_USB_OTG_FS;
+extern TIM_HandleTypeDef htim7;
 
-/* Battle Ship Player 1 Place ships */
-char Message1[] =
-    {SPACE, SPACE, SPACE, SPACE, SPACE, SPACE, SPACE, SPACE, SPACE, SPACE,
-     CHAR_B, CHAR_A, CHAR_T, CHAR_T, CHAR_L, CHAR_E, SPACE, CHAR_S, CHAR_H, CHAR_I, CHAR_P,
-     SPACE, SPACE, SPACE, SPACE, SPACE, SPACE, SPACE, SPACE, SPACE, SPACE,
-     CHAR_P, CHAR_L, CHAR_A, CHAR_Y, CHAR_E, CHAR_R, CHAR_1, SPACE,
-     CHAR_P, CHAR_L, CHAR_A, CHAR_C, CHAR_E, SPACE, CHAR_S, CHAR_H, CHAR_I, CHAR_P, CHAR_S};
+void NMI_Handler(void)        { while (1) {} }
+void HardFault_Handler(void)  { while (1) {} }
+void MemManage_Handler(void)  { while (1) {} }
+void BusFault_Handler(void)   { while (1) {} }
+void UsageFault_Handler(void) { while (1) {} }
+void SVC_Handler(void)        {}
+void DebugMon_Handler(void)   {}
+void PendSV_Handler(void)     {}
 
-/* Player 2 Place Ships */
-char Message2[] =
-    {SPACE, SPACE, SPACE, SPACE, SPACE, SPACE, SPACE, SPACE, SPACE, SPACE,
-     CHAR_P, CHAR_L, CHAR_A, CHAR_E, CHAR_R, CHAR_2, SPACE, CHAR_P, CHAR_L, CHAR_A, CHAR_C, CHAR_E, SPACE,
-     CHAR_S, CHAR_H, CHAR_I, CHAR_P, CHAR_S,
-     SPACE, SPACE, SPACE, SPACE, SPACE, SPACE, SPACE, SPACE, SPACE, SPACE, SPACE, SPACE, SPACE, SPACE, SPACE, SPACE};
+#define SEG_OFF  0
+#define SEG_DIM  1
+#define SEG_HIT  2
+#define SEG_BOAT 3
 
-/* Player 1 attack */
-char Message3[] =
-    {SPACE, SPACE, SPACE, SPACE, SPACE, SPACE, SPACE, SPACE, SPACE, SPACE,
-     CHAR_P, CHAR_L, CHAR_A, CHAR_E, CHAR_R, CHAR_1, SPACE,
-     CHAR_A, CHAR_T, CHAR_T, CHAR_A, CHAR_C, CHAR_K, SPACE,
-     SPACE, SPACE, SPACE, SPACE, SPACE, SPACE, SPACE, SPACE, SPACE, SPACE};
-
-/* Player 2 attack */
-char Message4[] =
-    {SPACE, SPACE, SPACE, SPACE, SPACE, SPACE, SPACE, SPACE, SPACE, SPACE,
-     CHAR_P, CHAR_L, CHAR_A, CHAR_E, CHAR_R, CHAR_2, SPACE,
-     CHAR_A, CHAR_T, CHAR_T, CHAR_A, CHAR_C, CHAR_K,
-     SPACE, SPACE, SPACE, SPACE, SPACE, SPACE, SPACE, SPACE, SPACE, SPACE};
-
-void Start_Message(char *msg, int length)
+// Replace the function signature and internals:
+void Layered_Display(void)
 {
-  Cursor_On = 0;
-  Animate_On = 1;
-  Message_Pointer = msg;
-  Save_Pointer = msg;
-  Message_Length = length;
-  Delay_msec = 200;
-}
+    // pick which maps to show based on Display_Mode
+    map_t *boats;
+    map_t *hits;
 
-Music Song[100];
+    if      (Display_Mode == 0) { boats = &Player_Map;  hits = &P1_Hits; }
+    else if (Display_Mode == 1) { boats = &Player2_Map; hits = &P2_Hits; }
+    else if (Display_Mode == 2) { boats = &Player2_Map; hits = &P1_Hits; }
+    else                        { boats = &Player_Map;  hits = &P2_Hits; }
 
-// NOTE: Game_Display is defined in stm32f4xx_it.c 
+    for (int i = 0; i < 8; i++) Game_Display[i] = 0;
 
-static char seg_cycle[] = {
-    (1<<0),  // top
-    (1<<6),  // middle
-    (1<<3),  // bottom
-    (1<<5),  // upper-left
-    (1<<4),  // lower-left
-    (1<<1),  // upper-right
-    (1<<2),  // lower-right
-};
+    for (int i = 0; i < 8; i++)
+    {
+        // horizontal segments — boat full bright, miss dim (ramp < 127 = 50%)
+        if (boats->horizontal[0][i])                    Game_Display[i] |= (1<<0);
+        else if (hits->horizontal[0][i] && ramp < 127)  Game_Display[i] |= (1<<0);
 
-int count_map_segments(map_t m)
-{
-    int count = 0;
-    for (int i = 0; i < 8; i++) {
-        if (m.horizontal[0][i]) count++;
-        if (m.horizontal[1][i]) count++;
-        if (m.horizontal[2][i]) count++;
-        if (m.vertical[0][i])   count++;
-        if (m.vertical[1][i])   count++;
-        if (m.vertical[0][i+8]) count++;
-        if (m.vertical[1][i+8]) count++;
+        if (boats->horizontal[1][i])                    Game_Display[i] |= (1<<6);
+        else if (hits->horizontal[1][i] && ramp < 127)  Game_Display[i] |= (1<<6);
+
+        if (boats->horizontal[2][i])                    Game_Display[i] |= (1<<3);
+        else if (hits->horizontal[2][i] && ramp < 127)  Game_Display[i] |= (1<<3);
+
+        // vertical segments
+        if (boats->vertical[0][i])                      Game_Display[i] |= (1<<5);
+        else if (hits->vertical[0][i] && ramp < 127)    Game_Display[i] |= (1<<5);
+
+        if (boats->vertical[1][i])                      Game_Display[i] |= (1<<4);
+        else if (hits->vertical[1][i] && ramp < 127)    Game_Display[i] |= (1<<4);
+
+        if (boats->vertical[0][i+8])                    Game_Display[i] |= (1<<1);
+        else if (hits->vertical[0][i+8] && ramp < 127)  Game_Display[i] |= (1<<1);
+
+        if (boats->vertical[1][i+8])                    Game_Display[i] |= (1<<2);
+        else if (hits->vertical[1][i+8] && ramp < 127)  Game_Display[i] |= (1<<2);
     }
-    return count;
-}
 
-int check_win(map_t hit_map, map_t boat_map)
-{
-    for (int i = 0; i < 8; i++) {
-        if (boat_map.horizontal[0][i] && !hit_map.horizontal[0][i]) return 0;
-        if (boat_map.horizontal[1][i] && !hit_map.horizontal[1][i]) return 0;
-        if (boat_map.horizontal[2][i] && !hit_map.horizontal[2][i]) return 0;
-        if (boat_map.vertical[0][i]   && !hit_map.vertical[0][i])   return 0;
-        if (boat_map.vertical[1][i]   && !hit_map.vertical[1][i])   return 0;
-        if (boat_map.vertical[0][i+8] && !hit_map.vertical[0][i+8]) return 0;
-        if (boat_map.vertical[1][i+8] && !hit_map.vertical[1][i+8]) return 0;
+    // cursor blink on top of everything
+    if (Cursor_On && Cursor_Visible)
+        Game_Display[Cursor_Digit] |= Cursor_Segment;
+
+    // write raw bitmasks directly to display hardware
+    for (int i = 0; i < 8; i++)
+    {
+        GPIOE->ODR = (0xFF00 | (unsigned char)Game_Display[i]) & ~(1 << (i + 8));
+        GPIOE->ODR |= 0xFF00;
     }
-    return 1;
 }
 
-/* USER CODE END 0 */
-
-int main(void)
+void SysTick_Handler(void)
 {
-  HAL_Init();
-  SystemClock_Config();
-  MX_GPIO_Init();
-  MX_TIM7_Init();
+  /* USER CODE BEGIN SysTick_IRQn 0 */
 
-  GPIOD->MODER  = 0x55555555;
-  GPIOA->MODER |= 0x000000FF;
-  GPIOE->MODER |= 0x55555555;
-  GPIOC->MODER |= 0x0;
-  GPIOE->ODR    = 0xFFFF;
+  COUNT++;
+  Vibrato_Count++;
 
-  RCC->APB2ENR |= 1 << 8;
-  ADC1->SMPR2  |= 1;
-  ADC1->CR2    |= 1;
-
-  RCC->AHB1ENR |= 1 << 12;
-
-  TIM7->PSC   = 199;
-  TIM7->ARR   = 1;
-  TIM7->DIER |= 1;
-  TIM7->CR1  |= 1;
-
-  int game = 0;
-  int i;
-
-  
-  
-  
-  
-  while (1)
+  if (Vibrato_Count >= Vibrato_Rate)
   {
-    switch (game)
+    Vibrato_Count = 0;
+    if (Song[INDEX].note > 0)
     {
-
-    case 0: // title screen — scroll "BATTLE SHIP PLAYER1 PLACE SHIPS"
-    {
-      Start_Message(Message1, sizeof(Message1) / sizeof(Message1[0]));
-
-      for (i = 0; i < Message_Length; i++)
-        CRC->DR = Message1[i];
-
-      CRC_Rx = CRC->DR;
-      GPIOD->ODR = CRC_Rx ^ CRC_Tx;
-
-      HAL_Delay(10000);   // let message scroll
-
-      Animate_On = 0;
-      HAL_Delay(1000);
-      for (i = 0; i < 8; i++)
-        Seven_Segment_Digit(i, SPACE, 0);
-      HAL_Delay(500);
-
-      game = 1;
-      break;
-    }
-
-    case 1: // P1 placing ships
-    {
-        Display_Mode = 0;
-        Animate_On = 0;
-        Cursor_On  = 1;
-        Delay_msec = 50;
-
-        // PA1 which digit (0-7)
-        ADC1->SQR3 = 1;
-        ADC1->CR2 |= (1 << 30);
-        while (!(ADC1->SR & 2));
-        Cursor_Digit = (ADC1->DR * 8) / 4096;
-
-        // PA2 which segment (0-6)
-        ADC1->SQR3 = 2;
-        ADC1->CR2 |= (1 << 30);
-        while (!(ADC1->SR & 2));
-        Cursor_Segment = seg_cycle[(ADC1->DR * 7) / 4096];
-
-        // PC10 = place ship segment
-        if (GPIOC->IDR & (1 << 10))
-        {
-            int d = Cursor_Digit;
-            char s = Cursor_Segment;
-            if      (s == (1<<0)) Player_Map.horizontal[0][d]   = 1;
-            else if (s == (1<<6)) Player_Map.horizontal[1][d]   = 1;
-            else if (s == (1<<3)) Player_Map.horizontal[2][d]   = 1;
-            else if (s == (1<<5)) Player_Map.vertical[0][d]     = 1;
-            else if (s == (1<<4)) Player_Map.vertical[1][d]     = 1;
-            else if (s == (1<<1)) Player_Map.vertical[0][d + 8] = 1;
-            else if (s == (1<<2)) Player_Map.vertical[1][d + 8] = 1;
-            HAL_Delay(300); // debounce
-        }
-
-        break;
-    }
-
-    case 2:
-    {
-      break;
-    }
-
-    case 3:
-    {
-      Start_Message(Message3, sizeof(Message3) / sizeof(Message3[0]));
-      game = 4;
-      break;
-    }
-
-    case 4:
-    {
-      Start_Message(Message4, sizeof(Message4) / sizeof(Message4[0]));
-      game = 5;
-      break;
-    }
-
-    case 5:
-    {
-      break;
-    }
-
-    default:
-    {
-      game = 0;
-      break;
-    }
+      Song[INDEX].note += Vibrato_Depth;
+      if (Song[INDEX].note > (Save_Note + Vibrato_Depth))
+        Song[INDEX].note = Save_Note - Vibrato_Depth;
     }
   }
+
+  // Cursor display and blink
+  if (Cursor_On > 0)
+  {
+      Cursor_Blink_Count++;
+      if (Cursor_Blink_Count >= 500)
+      {
+          Cursor_Blink_Count = 0;
+          Cursor_Visible ^= 1;
+      }
+
+      Delay_counter++;
+      if (Delay_counter > Delay_msec)
+      {
+          Delay_counter = 0;
+          Layered_Display();
+      }
+  }
+  else if (Animate_On > 0)
+  {
+      Delay_counter++;
+      if (Delay_counter > Delay_msec)
+      {
+          Delay_counter = 0;
+          Seven_Segment_Digit(7, *(Message_Pointer),     0);
+          Seven_Segment_Digit(6, *(Message_Pointer + 1), 0);
+          Seven_Segment_Digit(5, *(Message_Pointer + 2), 0);
+          Seven_Segment_Digit(4, *(Message_Pointer + 3), 0);
+          Seven_Segment_Digit(3, *(Message_Pointer + 4), 0);
+          Seven_Segment_Digit(2, *(Message_Pointer + 5), 0);
+          Seven_Segment_Digit(1, *(Message_Pointer + 6), 0);
+          Seven_Segment_Digit(0, *(Message_Pointer + 7), 0);
+          Message_Pointer++;
+          if ((Message_Pointer - Save_Pointer) >= (Message_Length - 8))
+              Message_Pointer = Save_Pointer;
+      }
+  }
+
+  /* USER CODE END SysTick_IRQn 0 */
+  HAL_IncTick();
 }
 
-void SystemClock_Config(void)
+void TIM7_IRQHandler(void)
 {
-  RCC_OscInitTypeDef RCC_OscInitStruct = {0};
-  RCC_ClkInitTypeDef RCC_ClkInitStruct = {0};
+  /* USER CODE BEGIN TIM7_IRQn 0 */
 
-  __HAL_RCC_PWR_CLK_ENABLE();
-  __HAL_PWR_VOLTAGESCALING_CONFIG(PWR_REGULATOR_VOLTAGE_SCALE1);
+  TONE++;
+  ramp++;
 
-  RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSE;
-  RCC_OscInitStruct.HSEState       = RCC_HSE_ON;
-  RCC_OscInitStruct.PLL.PLLState   = RCC_PLL_ON;
-  RCC_OscInitStruct.PLL.PLLSource  = RCC_PLLSOURCE_HSE;
-  RCC_OscInitStruct.PLL.PLLM = 8;
-  RCC_OscInitStruct.PLL.PLLN = 336;
-  RCC_OscInitStruct.PLL.PLLP = RCC_PLLP_DIV2;
-  RCC_OscInitStruct.PLL.PLLQ = 7;
-  if (HAL_RCC_OscConfig(&RCC_OscInitStruct) != HAL_OK) Error_Handler();
+  if ((Music_ON > 0) && (Song[INDEX].note > 0) && ((Song[INDEX].tempo / Song[INDEX].size - Song[INDEX].space) > COUNT))
+  {
+    if (Song[INDEX].note <= TONE)
+    {
+      GPIOD->ODR ^= 1;
+      TONE = 0;
+    }
+  }
+  else if ((Music_ON > 0) && Song[INDEX].tempo / Song[INDEX].size > COUNT)
+  {
+    TONE = 0;
+  }
+  else if ((Music_ON > 0) && Song[INDEX].tempo / Song[INDEX].size == COUNT)
+  {
+    COUNT = 0;
+    TONE = 0;
+    if (!(Song[INDEX].end))
+    {
+      INDEX++;
+      Save_Note = Song[INDEX].note;
+    }
+  }
+  else if (Music_ON == 0)
+  {
+    TONE = 0;
+    COUNT = 0;
+  }
 
-  RCC_ClkInitStruct.ClockType      = RCC_CLOCKTYPE_HCLK | RCC_CLOCKTYPE_SYSCLK
-                                   | RCC_CLOCKTYPE_PCLK1 | RCC_CLOCKTYPE_PCLK2;
-  RCC_ClkInitStruct.SYSCLKSource   = RCC_SYSCLKSOURCE_PLLCLK;
-  RCC_ClkInitStruct.AHBCLKDivider  = RCC_SYSCLK_DIV1;
-  RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV4;
-  RCC_ClkInitStruct.APB2CLKDivider = RCC_HCLK_DIV2;
-  if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_5) != HAL_OK) Error_Handler();
+  if (DIM_Enable > 0)
+  {
+    if (RED_BRT <= ramp)   GPIOD->ODR |= (1 << 15);
+    else                   GPIOD->ODR &= ~(1 << 15);
+    if (BLUE_BRT <= ramp)  GPIOD->ODR |= (1 << 14);
+    else                   GPIOD->ODR &= ~(1 << 14);
+    if (GREEN_BRT <= ramp) GPIOD->ODR |= (1 << 13);
+    else                   GPIOD->ODR &= ~(1 << 13);
+  }
+
+  /* USER CODE END TIM7_IRQn 0 */
+  HAL_TIM_IRQHandler(&htim7);
 }
 
-static void MX_TIM7_Init(void)
+void OTG_FS_IRQHandler(void)
 {
-  TIM_MasterConfigTypeDef sMasterConfig = {0};
-  htim7.Instance                        = TIM7;
-  htim7.Init.Prescaler                  = 0;
-  htim7.Init.CounterMode                = TIM_COUNTERMODE_UP;
-  htim7.Init.Period                     = 65535;
-  htim7.Init.AutoReloadPreload          = TIM_AUTORELOAD_PRELOAD_DISABLE;
-  if (HAL_TIM_Base_Init(&htim7) != HAL_OK) Error_Handler();
-  sMasterConfig.MasterOutputTrigger = TIM_TRGO_RESET;
-  sMasterConfig.MasterSlaveMode     = TIM_MASTERSLAVEMODE_DISABLE;
-  if (HAL_TIMEx_MasterConfigSynchronization(&htim7, &sMasterConfig) != HAL_OK) Error_Handler();
-}
-
-static void MX_GPIO_Init(void)
-{
-  GPIO_InitTypeDef GPIO_InitStruct = {0};
-
-  __HAL_RCC_GPIOE_CLK_ENABLE();
-  __HAL_RCC_GPIOC_CLK_ENABLE();
-  __HAL_RCC_GPIOH_CLK_ENABLE();
-  __HAL_RCC_GPIOA_CLK_ENABLE();
-  __HAL_RCC_GPIOB_CLK_ENABLE();
-  __HAL_RCC_GPIOD_CLK_ENABLE();
-
-  HAL_GPIO_WritePin(CS_I2C_SPI_GPIO_Port, CS_I2C_SPI_Pin, GPIO_PIN_RESET);
-  HAL_GPIO_WritePin(OTG_FS_PowerSwitchOn_GPIO_Port, OTG_FS_PowerSwitchOn_Pin, GPIO_PIN_SET);
-  HAL_GPIO_WritePin(GPIOD, LD4_Pin | LD3_Pin | LD5_Pin | LD6_Pin | Audio_RST_Pin, GPIO_PIN_RESET);
-
-  GPIO_InitStruct.Pin   = CS_I2C_SPI_Pin;
-  GPIO_InitStruct.Mode  = GPIO_MODE_OUTPUT_PP;
-  GPIO_InitStruct.Pull  = GPIO_NOPULL;
-  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
-  HAL_GPIO_Init(CS_I2C_SPI_GPIO_Port, &GPIO_InitStruct);
-
-  GPIO_InitStruct.Pin   = OTG_FS_PowerSwitchOn_Pin;
-  GPIO_InitStruct.Mode  = GPIO_MODE_OUTPUT_PP;
-  GPIO_InitStruct.Pull  = GPIO_NOPULL;
-  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
-  HAL_GPIO_Init(OTG_FS_PowerSwitchOn_GPIO_Port, &GPIO_InitStruct);
-
-  GPIO_InitStruct.Pin       = PDM_OUT_Pin;
-  GPIO_InitStruct.Mode      = GPIO_MODE_AF_PP;
-  GPIO_InitStruct.Pull      = GPIO_NOPULL;
-  GPIO_InitStruct.Speed     = GPIO_SPEED_FREQ_LOW;
-  GPIO_InitStruct.Alternate = GPIO_AF5_SPI2;
-  HAL_GPIO_Init(PDM_OUT_GPIO_Port, &GPIO_InitStruct);
-
-  GPIO_InitStruct.Pin  = B1_Pin;
-  GPIO_InitStruct.Mode = GPIO_MODE_EVT_RISING;
-  GPIO_InitStruct.Pull = GPIO_NOPULL;
-  HAL_GPIO_Init(B1_GPIO_Port, &GPIO_InitStruct);
-
-  // PC10 = place ship, PC11 = done
-  GPIO_InitStruct.Pin  = GPIO_PIN_10 | GPIO_PIN_11;
-  GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
-  GPIO_InitStruct.Pull = GPIO_PULLDOWN;
-  HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
-
-  GPIO_InitStruct.Pin  = BOOT1_Pin;
-  GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
-
-  // Init message scroll on startup
-  Message_Pointer = &Message1[0];
-  Save_Pointer    = &Message1[0];
-  Message_Length  = sizeof(Message1) / sizeof(Message1[0]);
-  Delay_msec      = 200;
-  Animate_On      = 1;
-
-  GPIO_InitStruct.Pull = GPIO_NOPULL;
-  HAL_GPIO_Init(BOOT1_GPIO_Port, &GPIO_InitStruct);
-
-  GPIO_InitStruct.Pin       = CLK_IN_Pin;
-  GPIO_InitStruct.Mode      = GPIO_MODE_AF_PP;
-  GPIO_InitStruct.Pull      = GPIO_NOPULL;
-  GPIO_InitStruct.Speed     = GPIO_SPEED_FREQ_LOW;
-  GPIO_InitStruct.Alternate = GPIO_AF5_SPI2;
-  HAL_GPIO_Init(CLK_IN_GPIO_Port, &GPIO_InitStruct);
-
-  GPIO_InitStruct.Pin   = LD4_Pin | LD3_Pin | LD5_Pin | LD6_Pin | Audio_RST_Pin;
-  GPIO_InitStruct.Mode  = GPIO_MODE_OUTPUT_PP;
-  GPIO_InitStruct.Pull  = GPIO_NOPULL;
-  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
-  HAL_GPIO_Init(GPIOD, &GPIO_InitStruct);
-
-  GPIO_InitStruct.Pin  = OTG_FS_OverCurrent_Pin;
-  GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
-  GPIO_InitStruct.Pull = GPIO_NOPULL;
-  HAL_GPIO_Init(OTG_FS_OverCurrent_GPIO_Port, &GPIO_InitStruct);
-
-  GPIO_InitStruct.Pin  = MEMS_INT2_Pin;
-  GPIO_InitStruct.Mode = GPIO_MODE_EVT_RISING;
-  GPIO_InitStruct.Pull = GPIO_NOPULL;
-  HAL_GPIO_Init(MEMS_INT2_GPIO_Port, &GPIO_InitStruct);
-}
-
-void Error_Handler(void)
-{
-  __disable_irq();
-  while (1) {}
+  HAL_HCD_IRQHandler(&hhcd_USB_OTG_FS);
 }
