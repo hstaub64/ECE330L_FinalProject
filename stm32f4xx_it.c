@@ -24,7 +24,7 @@ map_t P1_Hits     = {0};
 map_t P2_Hits     = {0};
 
 int  Display_Mode    = 0;
-int  Game_Stage_Mode = 0;
+
 
 // FIX 1: Define Cursor variables here
 char Cursor_On      = 0;
@@ -54,10 +54,9 @@ void SVC_Handler(void)        {}
 void DebugMon_Handler(void)   {}
 void PendSV_Handler(void)     {}
 
-#define SEG_OFF  0
-#define SEG_DIM  1
-#define SEG_HIT  2
-#define SEG_BOAT 3
+
+
+
 
 
 void Add_Boats_To_Display(map_t boats)
@@ -75,54 +74,44 @@ void Add_Boats_To_Display(map_t boats)
     }
 }
 
+
+
+
+
+
 void Add_Shots_To_Display(map_t shots, map_t boats)
 {
     for (int i = 0; i < 8; i++)
     {
         if (shots.horizontal[0][i])
-        {
-            if (boats.horizontal[0][i] || ramp < 127)
+            if (boats.horizontal[0][i] || ramp < 85)
                 Game_Display[i] |= (1<<0);
-        }
 
         if (shots.horizontal[1][i])
-        {
-            if (boats.horizontal[1][i] || ramp < 127)
+            if (boats.horizontal[1][i] || ramp < 85)
                 Game_Display[i] |= (1<<6);
-        }
 
         if (shots.horizontal[2][i])
-        {
-            if (boats.horizontal[2][i] || ramp < 127)
+            if (boats.horizontal[2][i] || ramp < 85)
                 Game_Display[i] |= (1<<3);
-        }
 
         if (shots.vertical[0][i])
-        {
-            if (boats.vertical[0][i] || ramp < 127)
+            if (boats.vertical[0][i] || ramp < 85)
                 Game_Display[i] |= (1<<5);
-        }
 
         if (shots.vertical[1][i])
-        {
-            if (boats.vertical[1][i] || ramp < 127)
+            if (boats.vertical[1][i] || ramp < 85)
                 Game_Display[i] |= (1<<4);
-        }
 
         if (shots.vertical[0][i + 8])
-        {
-            if (boats.vertical[0][i + 8] || ramp < 127)
+            if (boats.vertical[0][i + 8] || ramp < 85)
                 Game_Display[i] |= (1<<1);
-        }
 
         if (shots.vertical[1][i + 8])
-        {
-            if (boats.vertical[1][i + 8] || ramp < 127)
+            if (boats.vertical[1][i + 8] || ramp < 85)
                 Game_Display[i] |= (1<<2);
-        }
     }
 }
-
 
 
 
@@ -199,8 +188,13 @@ void SysTick_Handler(void)
           Cursor_Visible ^= 1;
       }
 
+
+
       Layered_Display();
   }
+
+
+
   else if (Animate_On > 0)
   {
       Delay_counter++;
