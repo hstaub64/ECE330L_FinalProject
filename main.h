@@ -52,7 +52,6 @@ extern char *Save_Pointer;
 // Display
 extern char Game_Display[8];
 extern int  Display_Mode;
-extern int  Game_Stage_Mode;
 extern char Cursor_Segment2;
 
 // Cursor
@@ -70,8 +69,9 @@ extern int  Delay_msec;
 extern int  Delay_counter;
 
 
+
 // Audio/PWM used and defined in main.c
-extern char ramp;
+extern unsigned char ramp;
 extern char RED_BRT;
 extern char GREEN_BRT;
 extern char BLUE_BRT;
@@ -277,5 +277,3 @@ void Error_Handler(void);
 #endif
 
 #endif
-
-
