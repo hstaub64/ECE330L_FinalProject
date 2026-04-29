@@ -26,7 +26,7 @@ map_t P2_Hits     = {0};
 int  Display_Mode    = 0;
 
 
-// FIX 1: Define Cursor variables here
+// Define Cursor variables here
 char Cursor_On      = 0;
 int  Cursor_Digit   = 0;
 char Cursor_Segment = 0x01;
@@ -34,7 +34,7 @@ char Cursor_Visible     = 0;
 int  Cursor_Blink_Count = 0;
 char Cursor_Segment2 = 0;  // second segment for double boat preview
 
-// FIX 2: Define Game_Display here
+// Define Game_Display here
 char Game_Display[8] = {0,0,0,0,0,0,0,0};
 static int display_digit = 0;
 /* USER CODE END PV */
@@ -54,11 +54,7 @@ void SVC_Handler(void)        {}
 void DebugMon_Handler(void)   {}
 void PendSV_Handler(void)     {}
 
-
-
-
-
-
+// if the value in the map is not empty, push value to the game display array at the corresponding bit (for each seg)
 void Add_Boats_To_Display(map_t boats)
 {
     for (int i = 0; i < 8; i++)
@@ -74,11 +70,7 @@ void Add_Boats_To_Display(map_t boats)
     }
 }
 
-
-
-
-
-
+// if there is a hit on the hit map and if there is a boat in the same spot, display solid light OR if miss, blink
 void Add_Shots_To_Display(map_t shots, map_t boats)
 {
     for (int i = 0; i < 8; i++)
@@ -114,7 +106,10 @@ void Add_Shots_To_Display(map_t shots, map_t boats)
 }
 
 
-
+// Clear the display
+// if display mode is 0, display player 1's map
+// if mode is 1, display player 2's map
+// if it's 2 or 3, add the shots and display the hit/miss
 void Layered_Display(void)
 {
     for (int i = 0; i < 8; i++)
@@ -136,23 +131,24 @@ void Layered_Display(void)
     {
         Add_Shots_To_Display(P2_Hits, Player_Map);
     }
+
+    // display for single boats vs double boats
     if (Cursor_On && Cursor_Visible)
     {
         Game_Display[Cursor_Digit] |= Cursor_Segment;
         if (Cursor_Segment2)
             Game_Display[Cursor_Digit] |= Cursor_Segment2;  // same digit
     }
+
+    // display to board
     GPIOE->ODR = 0xFF00 | ((unsigned char)Game_Display[display_digit]);
     GPIOE->ODR &= ~(1 << (display_digit + 8));
 
+    // loop display digit if it exceeds the 7 seg display
     display_digit++;
     if (display_digit >= 8)
         display_digit = 0;
 }
-
-
-
-
 
 
 void SysTick_Handler(void)
@@ -172,10 +168,6 @@ void SysTick_Handler(void)
         Song[INDEX].note = Save_Note - Vibrato_Depth;
     }
   }
-
-
-
-
 
 
   // Cursor display and blink
@@ -259,6 +251,7 @@ void TIM7_IRQHandler(void)
     COUNT = 0;
   }
 
+  // dimming for 7 seg display
   if (DIM_Enable > 0)
   {
     if (RED_BRT <= ramp)   GPIOD->ODR |= (1 << 15);

@@ -26,6 +26,7 @@ typedef struct music {
     char end;
 } Music;
 
+// struct for map for 7 seg
 typedef struct map_t
 {
     int horizontal[3][8];

@@ -237,7 +237,7 @@ int main(void)
                 Delay_msec   = 50;  // SysTick display refresh rate
 
 
-                int seg_mode = ((GPIOC->IDR >> 0) & 1); // SW1 switch where 0 = horizontal segment mode (top/mid/bot)
+                int seg_mode = ((GPIOC->IDR >> 0) & 1); // SW8 switch where 0 = horizontal segment mode (top/mid/bot)
                 //1 = vertical segment mode (upper/lower left/right) */
 
 
@@ -257,6 +257,10 @@ int main(void)
                 while (!(ADC1->SR & 2) && timeout-- > 0);  // wait for end of conversion
                 int pair = (ADC1->DR * 2) / 4096;  // maps 0-4095 to 0 or 1
 
+
+                // display boats;
+                // if in double placing mode, display two boat segs at the time time
+                // else, display single seg
                 if (P1_doubles < 2)
                 {
 //                     Double boat mode: two fixed vertical pairs
